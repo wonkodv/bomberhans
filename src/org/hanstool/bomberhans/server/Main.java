@@ -4,20 +4,26 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import org.hanstool.bomberhans.shared.Const;
-
 public class Main
 {
-	
-	public static void main(String args[])
+	public static void main(String[] args)
 	{
 		System.out.println("server");
 		try
 		{
-			Server server = new Server();
+			Server server;
+			if(args.length == 1)
+			{
+				server = new Server(args[0]);
+			}
+			else
+			{
+				server = new Server();
+			}
+
 			Thread serverThread = new Thread(server);
-			ServerSocket serverSocket;
-			serverSocket = new ServerSocket(Const.NetworkConsts.SERVER_PORT);
+
+			ServerSocket serverSocket = new ServerSocket(5636);
 			serverThread.start();
 			while(true)
 			{
@@ -27,7 +33,7 @@ public class Main
 		}
 		catch(IOException e)
 		{
-			System.exit(5); //
+			System.exit(5);
 		}
 	}
 }

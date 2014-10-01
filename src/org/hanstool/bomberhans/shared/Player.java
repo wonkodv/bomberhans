@@ -1,13 +1,7 @@
 package org.hanstool.bomberhans.shared;
 
-import org.hanstool.bomberhans.shared.Const.GameConsts;
-import org.hanstool.bomberhans.shared.Const.PlayerState;
-
-
 public class Player
 {
-	
-
 	private final byte	slot;
 	private String		name;
 	private float		x;
@@ -20,56 +14,53 @@ public class Player
 	public Player(byte slot, String name, byte x, byte y)
 	{
 		this.slot = slot;
-		this.setName(name);
-		this.x = x + 0.5f;
-		this.y = y + 0.5f;
-		setState(PlayerState.INVALID);
-		speed = GameConsts.PLAYER_BASE_SPEED;
-		power = GameConsts.PLAYER_BASE_POWER;
-		state = PlayerState.IDLE;
+		setName(name);
+		this.x = x + 0.5F;
+		this.y = y + 0.5F;
+		setState((byte) 0);
+		this.speed = 1.3F;
+		this.power = 2;
+		this.state = 10;
 	}
 	
 	public String getName()
 	{
-		return name;
+		return this.name;
 	}
 	
-	/**
-	 * @return the power
-	 */
 	public byte getPower()
 	{
-		return power;
+		return this.power;
 	}
 	
 	public byte getScore()
 	{
-		return score;
+		return this.score;
 	}
 	
 	public byte getSlot()
 	{
-		return slot;
+		return this.slot;
 	}
 	
 	public float getSpeed()
 	{
-		return speed;
+		return this.speed;
 	}
 	
 	public byte getState()
 	{
-		return state;
+		return this.state;
 	}
 	
 	public float getX()
 	{
-		return x;
+		return this.x;
 	}
 	
 	public float getY()
 	{
-		return y;
+		return this.y;
 	}
 	
 	public void setName(String name)
@@ -77,10 +68,6 @@ public class Player
 		this.name = name;
 	}
 	
-	/**
-	 * @param power
-	 *            the power to set
-	 */
 	public void setPower(byte power)
 	{
 		this.power = power;

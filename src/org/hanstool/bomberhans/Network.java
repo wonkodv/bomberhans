@@ -6,38 +6,33 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
-import org.hanstool.bomberhans.GUI.GuiInteractor;
 import org.hanstool.bomberhans.shared.Const;
-import org.hanstool.bomberhans.shared.Const.NetworkConsts;
-import org.hanstool.bomberhans.shared.Const.PlayerState;
 import org.hanstool.bomberhans.shared.NetworkStreamAdapter;
 
 public class Network implements Runnable
 {
 	private final Socket				sock;
 	private final NetworkStreamAdapter	nsa;
-	
 	DataInputStream						dis;
-	
-	private final GuiInteractor			guiInteractor;
-	byte								lastStateKnownToServer	= PlayerState.IDLE;
-	
-	public Network(GuiInteractor guiInteractor, String hostName, String userName) throws UnknownHostException, IOException
+	private final GUI.GuiInteractor		guiInteractor;
+	byte								lastStateKnownToServer	= 10;
+
+	public Network(GUI.GuiInteractor guiInteractor, String hostName, String userName) throws UnknownHostException, IOException
 	{
 		this.guiInteractor = guiInteractor;
 		this.nsa = new NetworkStreamAdapter();
-		
-		this.sock = new Socket(hostName, NetworkConsts.SERVER_PORT);
-		
-		nsa.queue(NetworkStreamAdapter.CtS_PLAYER_HELO, userName);
-		nsa.writeToStream(sock.getOutputStream());
-		nsa.clear();
-		
-		dis = new DataInputStream(sock.getInputStream());
-		
+
+		this.sock = new Socket(hostName, 5636);
+
+		this.nsa.queue((byte) 1, new Object[] { userName });
+		this.nsa.writeToStream(this.sock.getOutputStream());
+		this.nsa.clear();
+
+		this.dis = new DataInputStream(this.sock.getInputStream());
+
 		new Thread(this).start();
 	}
-	
+
 	@Override
 	public void run()
 	{
@@ -45,142 +40,128 @@ public class Network implements Runnable
 		{
 			while(true)
 			{
-				
-				int len = dis.readShort();
-				
+				int len = this.dis.readShort();
 
+				byte command = this.dis.readByte();
 
-				byte command = dis.readByte();
-				
 				if(Const.logging)
 				{
 					System.out.print("rcv: (" + len + ") " + NetworkStreamAdapter.NAMES[command] + " ");
 				}
-				
-				len -= 1;
-				
+
+				len-- ;
+
 				switch(command)
 				{
-					case NetworkStreamAdapter.StC_SYNC_FIELD:
-						int width = dis.readShort();
-						int height = dis.readShort();
+					case 11:
+						int width = this.dis.readShort();
+						int height = this.dis.readShort();
 						len -= 4;
-						
+
 						byte[][] newField = new byte[width][height];
-						
+
 						for(int i = 0; i < width; i++ )
 						{
 							len -= height;
-							dis.read(newField[i]);
+							this.dis.read(newField[i]);
 						}
-						guiInteractor.updateField(newField);
-					break;
-					case NetworkStreamAdapter.StC_PLAYER_JOIN:
+						this.guiInteractor.updateField(newField);
+						break;
+					case 8:
 					{
-						int slot = dis.read();
-						len -= 1;
+						int slot = this.dis.read();
+						len-- ;
 						byte[] buffer = new byte[len];
-						dis.read(buffer);
+						this.dis.read(buffer);
 						len -= buffer.length;
 						String name = new String(buffer, "UTF-8");
-						
-						guiInteractor.playerJoined(slot, name);
+
+						this.guiInteractor.playerJoined(slot, name);
 					}
 					break;
-					
-					case NetworkStreamAdapter.StC_SYNC_PLAYER:
+					case 12:
 					{
-						byte slot = dis.readByte();
-						byte state = dis.readByte();
-						float x = dis.readFloat();
-						float y = dis.readFloat();
-						float speed = dis.readFloat();
-						byte power = dis.readByte();
-						byte score = dis.readByte();
+						byte slot = this.dis.readByte();
+						byte state = this.dis.readByte();
+						float x = this.dis.readFloat();
+						float y = this.dis.readFloat();
+						float speed = this.dis.readFloat();
+						byte power = this.dis.readByte();
+						byte score = this.dis.readByte();
 						len -= 16;
-						guiInteractor.updatePlayer(slot, state, x, y, speed, power, score);
+						this.guiInteractor.updatePlayer(slot, state, x, y, speed, power, score);
 					}
 					break;
-					
-					case NetworkStreamAdapter.StC_SYNC_CELL:
+					case 10:
 					{
-						byte x = dis.readByte();
-						byte y = dis.readByte();
-						byte cellType = dis.readByte();
+						byte x = this.dis.readByte();
+						byte y = this.dis.readByte();
+						byte cellType = this.dis.readByte();
 						len -= 3;
-						guiInteractor.updateCell(x, y, cellType);
+						this.guiInteractor.updateCell(x, y, cellType);
 					}
 					break;
-					
-					case NetworkStreamAdapter.StC_PLAYER_SCORED:
+					case 9:
 					{
-						byte p1 = dis.readByte();
-						byte p2 = dis.readByte();
+						byte p1 = this.dis.readByte();
+						byte p2 = this.dis.readByte();
 						len -= 2;
-						guiInteractor.playerScored(p1, p2);
+						this.guiInteractor.playerScored(p1, p2);
 					}
 					break;
-					
-					case NetworkStreamAdapter.StC_UPDATE_COMPLETE:
-					{
-						guiInteractor.reDraw();
-					}
-					break;
-					
-					case NetworkStreamAdapter.StC_PLAYER_DROP:
-					{
-						byte slot = dis.readByte();
-						len -= 1;
-						guiInteractor.playerDrop(slot);
-					}
-					break;
+					case 14:
+						this.guiInteractor.reDraw();
+
+						break;
+					case 13:
+						byte slot = this.dis.readByte();
+						len-- ;
+						this.guiInteractor.playerDrop(slot);
+
+						break;
 					default:
 						throw new UnsupportedOperationException("not implemented: " + NetworkStreamAdapter.NAMES[command]);
-						
 				}
-				
+
 				if(len > 0)
 				{
 					byte[] buffer = new byte[len];
-					dis.read(buffer);
+					this.dis.read(buffer);
 					throw new Error(len + "unused byte " + Arrays.toString(buffer));
-					
 				}
-				else if(len < 0)
+
+				if(len < 0)
 				{
 					throw new Error( -len + " bytes too much ");
 				}
-				else
+
+				if(Const.logging)
 				{
-					
-					if(Const.logging)
-					{
-						System.out.println();
-					}
+					System.out.println();
 				}
-				
+
 			}
+
 		}
 		catch(IOException e)
 		{
-			guiInteractor.disconnect();
+			this.guiInteractor.disconnect();
 		}
 	}
-	
+
 	public void setPlayerState(byte state) throws IOException
 	{
-		if(state == lastStateKnownToServer)
+		if(state == this.lastStateKnownToServer)
 		{
 			return;
 		}
-		
-		lastStateKnownToServer = state;
-		
-		nsa.queue(NetworkStreamAdapter.CtS_PLAYER_SEND_STATE, state);
-		
-		nsa.writeToStream(sock.getOutputStream());
-		
-		nsa.clear();
-		
+
+		this.lastStateKnownToServer = state;
+
+		this.nsa.queue((byte) 2, new Object[] { Byte.valueOf(state) });
+
+		this.nsa.writeToStream(this.sock.getOutputStream());
+
+		this.nsa.clear();
 	}
 }

@@ -1,18 +1,11 @@
-/**
- * 
- */
 package org.hanstool.bomberhans.server.cells;
-
-import static org.hanstool.bomberhans.shared.Const.CellTypes.*;
 
 import org.hanstool.bomberhans.server.SPlayer;
 import org.hanstool.bomberhans.server.UpdateListener;
-import org.hanstool.bomberhans.shared.Const;
-import org.hanstool.bomberhans.shared.NetworkStreamAdapter;
 
 class CellFire extends Cell
 {
-	int		timeToLive	= Const.GameConsts.FIRE_TTL;
+	int		timeToLive	= 1250;
 	SPlayer	owner;
 	Cell	followedBy;
 	
@@ -32,24 +25,22 @@ class CellFire extends Cell
 	@Override
 	public void handleWalkOn(SPlayer p, UpdateListener ful)
 	{
-		if(followedBy instanceof CellStartSlot)
+		if(this.followedBy instanceof CellStartSlot)
 		{
-			CellStartSlot css = (CellStartSlot) followedBy;
-			if(css.owner == p)
+			CellStartSlot css = (CellStartSlot) this.followedBy;
+			if(css.owner != p)
 			{
-				return;// save on own startSlot
+				;
 			}
 		}
 		else
 		{
-			followedBy = createCell(HANS_BURNING, getX(), getY(), p, null);
+			this.followedBy = createCell((byte) 14, getX(), getY(), p, null);
 		}
 		p.respawn(ful);
-		owner.incScore(ful);
+		this.owner.incScore(ful);
 		
-		ful.sendToClient(NetworkStreamAdapter.StC_PLAYER_SCORED, owner.getSlot(), p.getSlot());
-		
-
+		ful.sendToClient((byte) 9, new Object[] { Byte.valueOf(this.owner.getSlot()), Byte.valueOf(p.getSlot()) });
 	}
 	
 	@Override
@@ -57,17 +48,17 @@ class CellFire extends Cell
 	{
 		this.owner = owner;
 		setCellType(cellType);
-		timeToLive = Const.GameConsts.FIRE_TTL;
+		this.timeToLive = 1250;
 		return true;
 	}
 	
 	@Override
 	public void update(long timeElapsed, UpdateListener ful)
 	{
-		timeToLive -= timeElapsed;
-		if(timeToLive <= 0)
+		this.timeToLive = (int) (this.timeToLive - timeElapsed);
+		if(this.timeToLive <= 0)
 		{
-			ful.replaceCell(followedBy);
+			ful.replaceCell(this.followedBy);
 		}
 	}
 }

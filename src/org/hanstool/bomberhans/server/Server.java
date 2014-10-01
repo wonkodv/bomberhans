@@ -1,56 +1,65 @@
 package org.hanstool.bomberhans.server;
 
 import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import org.hanstool.bomberhans.mapeditor.MapLoader;
 import org.hanstool.bomberhans.server.cells.Cell;
 import org.hanstool.bomberhans.server.cells.CellStartSlot;
 import org.hanstool.bomberhans.shared.Const;
-import org.hanstool.bomberhans.shared.Const.CellTypes;
-import org.hanstool.bomberhans.shared.Const.PlayerState;
 import org.hanstool.bomberhans.shared.NetworkStreamAdapter;
 
 public class Server implements Runnable
 {
-	
 	private LinkedList<SPlayer>		players;
-	
 	private Field					field;
-	
 	private NetworkStreamAdapter	nsa;
 	
-	Server()
+	Server() throws FileNotFoundException, IOException
 	{
-		players = new LinkedList<SPlayer>();
-		field = Field.generateNewField(this);
-		nsa = new NetworkStreamAdapter();
+		this(null);
 	}
 	
+	public Server(String mapFile) throws FileNotFoundException, IOException
+	{
+		this.nsa = new NetworkStreamAdapter();
+		this.players = new LinkedList();
+		
+		if(mapFile == null)
+		{
+			this.field = new Field(this, Field.generateNewField(), 70);
+		}
+		else
+		{
+			MapLoader ml = new MapLoader(new File(mapFile));
+			this.field = new Field(this, ml);
+		}
+	}
 	
-
 	void AddPlayer(Socket socket)
 	{
-		if(players.size() >= field.getMaxPlayers())
+		if(this.players.size() >= this.field.getMaxPlayers())
 		{
 			try
 			{
-				socket.getOutputStream().write(NetworkStreamAdapter.FIN);
+				socket.getOutputStream().write(6);
 				socket.close();
 			}
-			catch(IOException e)
+			catch(IOException localIOException)
 			{
-				; //
 			}
 		}
-		CellStartSlot cSlot = null;
 		byte slot;
-		for(slot = 0; slot <= field.getMaxPlayers() - 1; slot++ )
+		CellStartSlot cSlot = null;
+		for(slot = 0; slot <= this.field.getMaxPlayers() - 1; slot = (byte) (slot + 1))
 		{
-			cSlot = field.ful.getSlotCell(slot);
+			cSlot = this.field.ful.getSlotCell(slot);
 			if(cSlot.getOwner() == null)
 			{
 				break;
@@ -58,29 +67,27 @@ public class Server implements Runnable
 		}
 		if(cSlot == null)
 		{
-			throw new Error("players.size = " + players.size() + " field.getMaxPlayers() = " + field.getMaxPlayers() + " no free slot was found :(");
+			throw new Error("players.size = " + this.players.size() + " field.getMaxPlayers() = " + this.field.getMaxPlayers() + " no free slot was found :(");
 		}
 		
 		SPlayer p = new SPlayer(slot, "player_" + slot, socket, cSlot.getX(), cSlot.getY());
 		cSlot.setOwner(p);
-		synchronized(players)
+		synchronized(this.players)
 		{
-			players.add(p);
+			this.players.add(p);
 		}
-		
-
 	}
 	
 	void netHandleInput(SPlayer p, UpdateListener ful) throws IOException
 	{
 		while(true)
 		{
-			int len;
 			DataInputStream dis = p.getDis();
 			if(dis.available() < 2)
 			{
 				return;
 			}
+			int len;
 			if(p.lenghtOfNextPartialFrame != 0)
 			{
 				if(dis.available() < p.lenghtOfNextPartialFrame)
@@ -98,73 +105,67 @@ public class Server implements Runnable
 					p.lenghtOfNextPartialFrame = len;
 					return;
 				}
+				
 			}
 			
-
 			int command = dis.read();
 			len-- ;
 			
-
-
 			if(Const.logging)
 			{
 				System.out.print("rcv: " + NetworkStreamAdapter.NAMES[command]);
 			}
 			
-
-
 			switch(command)
 			{
-				case NetworkStreamAdapter.INVALID:
+				case 0:
 					throw new Error("What the fuck? Network Command Invalid O_O");
-				case NetworkStreamAdapter.CtS_PLAYER_HELO:
-				{
-					byte[] buffer;
-					buffer = new byte[len];
+				case 1:
+					byte[] buffer = new byte[len];
 					dis.read(buffer, 0, len);
 					len -= buffer.length;
 					p.setName(new String(buffer, "utf-8"));
 					
-					for(SPlayer pl : players)
+					for(SPlayer pl : this.players)
 					{
-						sendToClient(NetworkStreamAdapter.StC_PLAYER_JOIN, pl.getSlot(), pl.getName());
+						sendToClient((byte) 8, new Object[] { Byte.valueOf(pl.getSlot()), pl.getName() });
 					}
-				}
-				break;
-				case NetworkStreamAdapter.CtS_PLAYER_SEND_STATE:
-					byte state = dis.readByte();
-					len -= 1;
 					
-					if(state == PlayerState.PLACING_BOMB)
+					break;
+				case 2:
+					byte state = dis.readByte();
+					len-- ;
+					
+					if(state == 13)
 					{
 						if(p.getCurrentBombs() < p.getMax_bombs())
 						{
-							
 							if(p.getState() != state)
 							{
-								float dX = 0, dY = 0;
-								switch(p.getState() | 1)
+								float dX = 0.0F;
+								float dY = 0.0F;
+								switch(p.getState() | 0x1)
 								{
-									case PlayerState.RUNNING_N2:
-										dY = 0.4f;
-									break;
-									case PlayerState.RUNNING_W2:
-										dX = 0.4f;
-									break;
-									case PlayerState.RUNNING_E2:
-										dX = -0.4f;
-									break;
-									case PlayerState.RUNNING_S2:
-										dY = -0.4f;
-									break;
+									case 3:
+										dY = 0.4F;
+										break;
+									case 9:
+										dX = 0.4F;
+										break;
+									case 5:
+										dX = -0.4F;
+										break;
+									case 7:
+										dY = -0.4F;
+									case 4:
+									case 6:
+									case 8:
 								}
-								
-
-								byte x = (byte) Math.floor(p.getX() + dX);
-								byte y = (byte) Math.floor(p.getY() + dY);
-								if(ful.getCell(x, y).getCellType() == CellTypes.CLEAR || ful.getCell(x, y).getCellType() == CellTypes.HANS_GORE)
+								byte x = (byte) (int) Math.floor(p.getX() + dX);
+								byte y = (byte) (int) Math.floor(p.getY() + dY);
+								if(ful.getCell(x, y).getCellType() == 1 || ful.getCell(x, y).getCellType() == 15)
 								{
-									ful.replaceCell(Cell.createCell(CellTypes.BOMB, x, y, p, null));
+									ful.replaceCell(Cell.createCell((byte) 5, x, y, p, null));
 									p.setCurrentBombs(p.getCurrentBombs() + 1);
 								}
 							}
@@ -172,105 +173,76 @@ public class Server implements Runnable
 					}
 					p.setState(state);
 					
-				break;
-				case NetworkStreamAdapter.CtS_PLAYER_PLACE_BOMB:
-					// TODO if not StartSlot
+					break;
+				case 4:
 					throw new UnsupportedOperationException("NetworkCommand not implemented");
-				case NetworkStreamAdapter.CtS_PLAYER_NEWGAME:
+				case 3:
 					throw new UnsupportedOperationException("NetworkCommand not implemented");
 			}
 			
-
-
 			if(len > 0)
 			{
 				byte[] buffer = new byte[len];
 				dis.read(buffer);
 				throw new Error(len + "unused byte " + Arrays.toString(buffer));
-				
 			}
-			else if(len < 0)
+			
+			if(len < 0)
 			{
 				throw new Error( -len + " bytes too much ");
 			}
-			else
+			
+			if(Const.logging)
 			{
-				
-				if(Const.logging)
-				{
-					System.out.println();
-				}
+				System.out.println();
 			}
 		}
 	}
 	
-	/**
-	 * @param p
-	 */
 	private void netHandlePlayerDrop(SPlayer p)
 	{
-		nsa.queue(NetworkStreamAdapter.StC_PLAYER_DROP, p.getSlot());
-		
+		this.nsa.queue((byte) 13, new Object[] { Byte.valueOf(p.getSlot()) });
 	}
 	
-	
-	/**
-	 * @param p
-	 */
 	private void netSendPlayerToClient(SPlayer p)
 	{
-		/*
-		 * Parameters: byte slot, byte state, float x, float y, byte speed, byte
-		 * power, byte score
-		 */
-		sendToClient(NetworkStreamAdapter.StC_SYNC_PLAYER, p.getSlot(), p.getState(), p.getX(), p.getY(), p.getSpeed(), p.getPower(), p.getScore());
-		
+		sendToClient((byte) 12, new Object[] { Byte.valueOf(p.getSlot()), Byte.valueOf(p.getState()), Float.valueOf(p.getX()), Float.valueOf(p.getY()), Float.valueOf(p.getSpeed()), Byte.valueOf(p.getPower()), Byte.valueOf(p.getScore()) });
 	}
 	
-	
-
-	/**
-	 * @param p
-	 */
 	private void netSendWholeFieldToClient()
 	{
-		
-		short w = (short) field.getWidth();
-		short h = (short) field.getHeight();
+		short w = (short) this.field.getWidth();
+		short h = (short) this.field.getHeight();
 		byte[] buff = new byte[w * h];
 		
 		for(int x = 0; x < w; x++ )
 		{
 			for(int y = 0; y < h; y++ )
 			{
-				buff[x * h + y] = field.getCellType(x, y);
+				buff[x * h + y] = this.field.getCellType(x, y);
 			}
 		}
-		nsa.queue(NetworkStreamAdapter.StC_SYNC_FIELD, w, h, buff);
-		
+		this.nsa.queue((byte) 11, new Object[] { Short.valueOf(w), Short.valueOf(h), buff });
 	}
 	
-	
-
 	@Override
 	public void run()
 	{
-		Thread.currentThread().setPriority(Thread.NORM_PRIORITY + 2);
+		Thread.currentThread().setPriority(7);
 		long lastTime = System.currentTimeMillis();
 		while(true)
 		{
 			long timePassed = System.currentTimeMillis() - lastTime;
 			lastTime = System.currentTimeMillis();
 			
-			synchronized(players)
+			synchronized(this.players)
 			{
-				
-				for(Iterator<SPlayer> it = players.iterator(); it.hasNext();)
+				for(Iterator it = this.players.iterator(); it.hasNext();)
 				{
-					SPlayer p = it.next();
+					SPlayer p = (SPlayer) it.next();
 					try
 					{
-						netHandleInput(p, field.ful);
+						netHandleInput(p, this.field.ful);
 						if(p.getIsNew())
 						{
 							netSendWholeFieldToClient();
@@ -279,19 +251,19 @@ public class Server implements Runnable
 					}
 					catch(IOException e)
 					{
-						field.ful.getSlotCell(p.getSlot()).setOwner(null);
+						this.field.ful.getSlotCell(p.getSlot()).setOwner(null);
 						
 						it.remove();
 						netHandlePlayerDrop(p);
 					}
 				}
 				
-				for(SPlayer p : players)
+				for(SPlayer p : this.players)
 				{
-					p.update(timePassed, field.ful);
+					p.update(timePassed, this.field.ful);
 				}
 				
-				for(SPlayer p : players)
+				for(SPlayer p : this.players)
 				{
 					if(p.getDidChange())
 					{
@@ -301,19 +273,18 @@ public class Server implements Runnable
 					
 				}
 				
-
-				field.update(timePassed);
+				this.field.update(timePassed);
 				
-				if( !nsa.isQueueEmpty())
+				if( !this.nsa.isQueueEmpty())
 				{
-					nsa.queue(NetworkStreamAdapter.StC_UPDATE_COMPLETE);
+					this.nsa.queue((byte) 14, new Object[0]);
 					
-					for(Iterator<SPlayer> it = players.iterator(); it.hasNext();)
+					for(Iterator it = this.players.iterator(); it.hasNext();)
 					{
-						SPlayer p = it.next();
+						SPlayer p = (SPlayer) it.next();
 						try
 						{
-							nsa.writeToStream(p.getSocket().getOutputStream());
+							this.nsa.writeToStream(p.getSocket().getOutputStream());
 						}
 						catch(IOException e)
 						{
@@ -325,28 +296,19 @@ public class Server implements Runnable
 				
 			}
 			
-			nsa.clear();
+			this.nsa.clear();
 			try
 			{
-				Thread.sleep(Const.NetworkConsts.UPDATE_INTERVAL);
+				Thread.sleep(50L);
 			}
-			catch(InterruptedException e)
+			catch(InterruptedException localInterruptedException)
 			{
-				; // cannot happen
 			}
 		}
 	}
 	
-	/**
-	 * @param stcPlayerJoin
-	 * @param slot
-	 * @param name
-	 */
-	void sendToClient(byte networkCMD, Object... params)
+	void sendToClient(byte networkCMD, Object[] params)
 	{
-		nsa.queue(networkCMD, params);
-		
+		this.nsa.queue(networkCMD, params);
 	}
-	
-
 }

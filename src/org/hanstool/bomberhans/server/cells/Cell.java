@@ -1,64 +1,51 @@
-/**
- * 
- */
 package org.hanstool.bomberhans.server.cells;
-
-import static org.hanstool.bomberhans.shared.Const.CellTypes.*;
 
 import org.hanstool.bomberhans.server.SPlayer;
 import org.hanstool.bomberhans.server.UpdateListener;
-import org.hanstool.bomberhans.shared.Const.CellTypes;
 
-/**
- * @author Wonko
- */
 public abstract class Cell
 {
-	public static Cell createCell(byte cellType, byte x, byte y, SPlayer player, Cell followedBy)
-	{
-		
-		switch(cellType)
-		{
-			case FIRE_CENTER:
-			case FIRE_HORZ:
-			case FIRE_VERT:
-			case FIRE_END_N:
-			case FIRE_END_E:
-			case FIRE_END_S:
-			case FIRE_END_W:
-				return new CellFire(x, y, cellType, player, followedBy);
-			case BOMB:
-				return new CellBomb(x, y, player);
-			case WALL:
-				return new CellWall(x, y);
-			case WOOD:
-			case BURNING_WOOD:
-				return new CellWood(x, y, cellType);
-			case START_POINT:
-				return new CellStartSlot(x, y, player);
-			case CLEAR:
-				return new CellClear(x, y);
-				
-			case SP_PORT:
-				return new CellSpecialPort(x, y);
-			case SP_SCHINKEN:
-			case PU_BOMB:
-			case PU_POWER:
-			case PU_SPEED:
-				return new CellSpecial(x, y, cellType);
-				
-			case HANS_BURNING:
-			case HANS_DEAD:
-			case HANS_GORE:
-				return new CellDeadGuy(x, y, cellType, player);
-			default:
-				throw new UnsupportedOperationException("CreateCell not Implemented " + CellTypes.NAMES[cellType]);
-		}
-	}
-	
 	private final byte	x;
 	private final byte	y;
 	private byte		cellType;
+	
+	public static Cell createCell(byte cellType, byte x, byte y, SPlayer player, Cell followedBy)
+	{
+		switch(cellType)
+		{
+			case 6:
+			case 7:
+			case 8:
+			case 9:
+			case 10:
+			case 11:
+			case 12:
+				return new CellFire(x, y, cellType, player, followedBy);
+			case 5:
+				return new CellBomb(x, y, player);
+			case 2:
+				return new CellWall(x, y);
+			case 3:
+			case 4:
+				return new CellWood(x, y, cellType);
+			case 21:
+				return new CellStartSlot(x, y, player);
+			case 1:
+				return new CellClear(x, y);
+			case 19:
+				return new CellSpecialPort(x, y);
+			case 16:
+			case 17:
+			case 18:
+			case 20:
+				return new CellSpecial(x, y, cellType);
+			case 13:
+			case 14:
+			case 15:
+				return new CellDeadGuy(x, y, cellType, player);
+		}
+		throw new UnsupportedOperationException("CreateCell not Implemented " + org.hanstool.bomberhans.shared.Const.CellTypes.NAMES[cellType]);
+	}
 	
 	protected Cell(byte x, byte y, byte cellType)
 	{
@@ -71,70 +58,65 @@ public abstract class Cell
 	
 	protected void explode(UpdateListener ful, int power, SPlayer fireOwner)
 	{
-		ful.replaceCell(createCell(FIRE_CENTER, getX(), getY(), fireOwner, createCell(CLEAR, getX(), getY(), null, null)));
+		ful.replaceCell(createCell((byte) 6, getX(), getY(), fireOwner, createCell((byte) 1, getX(), getY(), null, null)));
 		
-
-		for(byte i = 1; i <= power; i++ )
+		for(byte i = 1; i <= power; i = (byte) (i + 1))
 		{
-			Cell c = ful.getCell((byte) (x + i), y);
-			if( !c.setOnFire((i == power ? FIRE_END_E : FIRE_HORZ), ful, fireOwner))
+			Cell c = ful.getCell((byte) (this.x + i), this.y);
+			if( !c.setOnFire((byte) (i == power ? 10 : 7), ful, fireOwner))
 			{
 				break;
 			}
 		}
-		for(byte i = 1; i <= power; i++ )
+		for(byte i = 1; i <= power; i = (byte) (i + 1))
 		{
-			Cell c = ful.getCell((byte) (x - i), y);
-			if( !c.setOnFire((i == power ? FIRE_END_W : FIRE_HORZ), ful, fireOwner))
+			Cell c = ful.getCell((byte) (this.x - i), this.y);
+			if( !c.setOnFire((byte) (i == power ? 12 : 7), ful, fireOwner))
 			{
 				break;
 			}
 		}
-		for(byte i = 1; i <= power; i++ )
+		for(byte i = 1; i <= power; i = (byte) (i + 1))
 		{
-			Cell c = ful.getCell(x, (byte) (y + i));
-			if( !c.setOnFire((i == power ? FIRE_END_S : FIRE_VERT), ful, fireOwner))
+			Cell c = ful.getCell(this.x, (byte) (this.y + i));
+			if( !c.setOnFire((byte) (i == power ? 11 : 8), ful, fireOwner))
 			{
 				break;
 			}
 		}
-		for(byte i = 1; i <= power; i++ )
+		for(byte i = 1; i <= power; i = (byte) (i + 1))
 		{
-			Cell c = ful.getCell(x, (byte) (y - i));
-			if( !c.setOnFire((i == power ? FIRE_END_N : FIRE_VERT), ful, fireOwner))
+			Cell c = ful.getCell(this.x, (byte) (this.y - i));
+			if( !c.setOnFire((byte) (i == power ? 9 : 8), ful, fireOwner))
 			{
 				break;
 			}
 		}
 	}
 	
-	
 	public byte getCellType()
 	{
-		return cellType;
+		return this.cellType;
 	}
 	
 	public byte getX()
 	{
-		return x;
+		return this.x;
 	}
 	
 	public byte getY()
 	{
-		return y;
+		return this.y;
 	}
 	
-	
-	public abstract void handleWalkOn(SPlayer p, UpdateListener ful);
+	public abstract void handleWalkOn(SPlayer paramSPlayer, UpdateListener paramUpdateListener);
 	
 	public void setCellType(byte cellType)
 	{
 		this.cellType = cellType;
 	}
 	
+	public abstract boolean setOnFire(byte paramByte, UpdateListener paramUpdateListener, SPlayer paramSPlayer);
 	
-	public abstract boolean setOnFire(byte cellType, UpdateListener ful, SPlayer owner);
-	
-	public abstract void update(long timeElapsed, UpdateListener ful);
-	
+	public abstract void update(long paramLong, UpdateListener paramUpdateListener);
 }

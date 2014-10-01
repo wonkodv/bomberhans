@@ -1,9 +1,4 @@
-/**
- * 
- */
 package org.hanstool.bomberhans.server.cells;
-
-import static org.hanstool.bomberhans.shared.Const.CellTypes.*;
 
 import java.util.Random;
 
@@ -17,48 +12,44 @@ class CellBomb extends Cell
 	int						timeToLive	= Const.GameConsts.BOMB_TTL();
 	SPlayer					owner;
 	int						power;
-	
+
 	public CellBomb(byte x, byte y, SPlayer owner)
 	{
-		super(x, y, BOMB);
+		super(x, y, (byte) 5);
 		this.owner = owner;
-		power = owner.getPower();
+		this.power = owner.getPower();
 	}
-	
+
 	@Override
 	public boolean canWalkOn()
 	{
-		return rand.nextInt(100) < Const.GameConsts.BOMB_WALKOVER;
+		return rand.nextInt(100) < 60;
 	}
-	
+
 	@Override
 	public void handleWalkOn(SPlayer p, UpdateListener ful)
 	{
-		//
 	}
-	
+
 	@Override
 	public boolean setOnFire(byte cellType, UpdateListener ful, SPlayer owner)
 	{
-		
-		if(timeToLive > Const.GameConsts.BOMB_TTL_AFTER_BURNING)
+		if(this.timeToLive > 400)
 		{
-			timeToLive = Const.GameConsts.BOMB_TTL_AFTER_BURNING;
-			this.owner.setCurrentBombs(owner.getCurrentBombs() - 1);
-			this.owner = owner;
-			this.owner.setCurrentBombs(owner.getCurrentBombs() + 1);
+			this.timeToLive = 400;
 		}
+
 		return true;
 	}
-	
+
 	@Override
 	public void update(long timeElapsed, UpdateListener ful)
 	{
-		timeToLive -= timeElapsed;
-		if(timeToLive < 0)
+		this.timeToLive = (int) (this.timeToLive - timeElapsed);
+		if(this.timeToLive < 0)
 		{
-			explode(ful, power, owner);
-			this.owner.setCurrentBombs(owner.getCurrentBombs() - 1);
+			explode(ful, this.power, this.owner);
+			this.owner.setCurrentBombs(this.owner.getCurrentBombs() - 1);
 		}
 	}
 }

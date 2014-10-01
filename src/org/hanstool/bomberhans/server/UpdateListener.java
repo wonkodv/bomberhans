@@ -1,23 +1,13 @@
-/**
- * 
- */
 package org.hanstool.bomberhans.server;
 
 import org.hanstool.bomberhans.server.cells.Cell;
 import org.hanstool.bomberhans.server.cells.CellStartSlot;
-import org.hanstool.bomberhans.shared.NetworkStreamAdapter;
 
 public class UpdateListener
 {
-	/**
-	 * 
-	 */
 	private final Field		field;
 	private final Server	server;
 	
-	/**
-	 * @param field
-	 */
 	UpdateListener(Server server, Field field)
 	{
 		this.field = field;
@@ -31,32 +21,32 @@ public class UpdateListener
 	
 	public int getHeight()
 	{
-		return field.getHeight();
+		return this.field.getHeight();
 	}
 	
 	public CellStartSlot getSlotCell(byte slot)
 	{
-		return field.getSlotCell(slot);
+		return this.field.getSlotCell(slot);
 	}
 	
 	public int getWidth()
 	{
-		return field.getWidth();
+		return this.field.getWidth();
 	}
 	
 	public int getWoodToSpecial()
 	{
-		return field.getWoodToSpecial();
+		return this.field.getWoodToSpecial();
 	}
 	
 	public void replaceCell(Cell cell)
 	{
 		this.field.cells[cell.getX()][cell.getY()] = cell;
-		sendToClient(NetworkStreamAdapter.StC_SYNC_CELL, cell.getX(), cell.getY(), cell.getCellType());
+		sendToClient((byte) 10, new Object[] { Byte.valueOf(cell.getX()), Byte.valueOf(cell.getY()), Byte.valueOf(cell.getCellType()) });
 	}
 	
-	public void sendToClient(byte networkCMD, Object... params)
+	public void sendToClient(byte networkCMD, Object[] params)
 	{
-		server.sendToClient(networkCMD, params);
+		this.server.sendToClient(networkCMD, params);
 	}
 }
