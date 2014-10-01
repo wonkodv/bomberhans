@@ -1,0 +1,22 @@
+package org.hanstool.bomberhans;
+
+//TODO SP_PORT
+//TODO SP_SCHINKEN
+//TODO UGR_BOMB
+//TODO Client PlayerStats
+//TODO CLient SOUNDS
+//TODO DEATH PU decrease
+//TODO Hampeln Weniger
+//TODO Player Gets STUNNED after DEATH
+/*TODO EDITOR: 
+Params Ini:
+X_size (max 125), Y_size (max 125), GamemodeParam (e.g. 1= normal, 2=ctf, 3=hansmode,....), Chance: EditorWood->IngameWood, Chance: IngameWood->SP/PU, 
+Chances: WTS_WALL, WTS_POWER, WTS_SPEED, WTS_BOMBS, WTS_PORT, WTS_SCHINKEN, Zahlen aufaddieren!!
+
+-LeftMouse -> Place: 	START_POINT WALL WOOD PU_BOMB PU_POWER PU_SPEED SP_PORT SP_SCHINKEN 
+-RightMouse -> Place: 	CLEAR
+-FILL ALL Button
+
+check max_Players on save
+mach eine reihe WALL an den Rändern
+*/
