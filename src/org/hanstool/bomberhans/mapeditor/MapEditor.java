@@ -1,5 +1,7 @@
 package org.hanstool.bomberhans.mapeditor;
 
+import static org.hanstool.bomberhans.shared.Const.CellTypes.*;
+
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -36,7 +38,7 @@ public class MapEditor extends JFrame
 	private JTextField			nameTFD;
 	private JTextField			woodStayTFD;
 	private JTextField			specialTFD;
-	
+
 	static
 	{
 		try
@@ -47,29 +49,29 @@ public class MapEditor extends JFrame
 		{
 		}
 	}
-
+	
 	public MapEditor(File map)
 	{
 		this();
 		loadMap(map);
 	}
-	
+
 	public MapEditor()
 	{
 		setLayout(null);
-		
+
 		field = new GUI_graphics.FieldPanel();
 		add(field);
 		field.setBounds(115, 115, 300, 300);
 		field.setFocusable(false);
-		
+
 		MouseAdapter m = new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e)
 			{
 				MapEditor.this.onFieldClick(e);
 			}
-			
+
 			@Override
 			public void mouseDragged(MouseEvent e)
 			{
@@ -78,20 +80,20 @@ public class MapEditor extends JFrame
 		};
 		field.addMouseListener(m);
 		field.addMouseMotionListener(m);
-		
+
 		field.setCellTypes(genDefMap(19, 21));
-		
-		byte[] cellTypes = { 1, 2, 3, 21, 19, 20, 16, 17, 18 };
-		
+
+		byte[] cellTypes = { CLEAR, WALL, WOOD, START_POINT, SP_PORT, SP_SCHINKEN, PU_BOMB, PU_POWER, PU_SPEED };
+
 		for(byte i = 0; i < cellTypes.length; i = (byte) (i + 1))
 		{
 			BufferedImage img = field.imgBuffer.getcellImage(cellTypes[i]);
 			HansButton b = new HansButton(img, cellTypes[i]);
-			
+
 			b.setBounds(10 + (3 + i) * 35, 80, 30, 30);
 			add(b);
 		}
-		
+
 		loadBTN = new JButton("load");
 		loadBTN.setBounds(10, 10, 65, 30);
 		add(loadBTN);
@@ -115,11 +117,11 @@ public class MapEditor extends JFrame
 		sizeXTFD = new JTextField("19");
 		sizeXTFD.setBounds(10, 115, 30, 30);
 		add(sizeXTFD);
-		
+
 		sizeYTFD = new JTextField("19");
 		sizeYTFD.setBounds(45, 115, 30, 30);
 		add(sizeYTFD);
-		
+
 		newBTN = new JButton("new");
 		newBTN.setBounds(10, 150, 65, 30);
 		add(newBTN);
@@ -135,7 +137,7 @@ public class MapEditor extends JFrame
 			lbl.setBounds(115, 10, 170, 30);
 			add(lbl);
 		}
-
+		
 		{
 			nameTFD = new JTextField("My Awsome Map");
 			nameTFD.setBounds(115, 45, 170, 30);
@@ -162,7 +164,7 @@ public class MapEditor extends JFrame
 			add(specialTFD);
 		}
 		setDefaultCloseOperation(0);
-		
+
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e)
@@ -182,7 +184,7 @@ public class MapEditor extends JFrame
 		setBounds(300, 300, 1000, 800);
 		setVisible(true);
 	}
-	
+
 	byte[][] genDefMap(int sizeX, int sizeY)
 	{
 		byte[][] bytes = new byte[sizeX][sizeY];
@@ -193,39 +195,27 @@ public class MapEditor extends JFrame
 				byte b;
 				if(x == 0 || x == sizeX - 1 || y == 0 || y == sizeY - 1)
 				{
-					b = 2;
+					b = WALL;
+				}
+				else if((x == 1 || x == sizeX - 2) && (y == 1 || y == sizeY - 2))
+				{
+					b = START_POINT;
+				}
+				else if((x == 2 || x == sizeX - 3) && (y == 1 || y == sizeY - 2))
+				{
+					b = CLEAR;
+				}
+				else if((x == 1 || x == sizeX - 2) && (y == 2 || y == sizeY - 3))
+				{
+					b = CLEAR;
+				}
+				else if(x % 2 == 0 && y % 2 == 0)
+				{
+					b = WALL;
 				}
 				else
 				{
-					if((x == 1 || x == sizeX - 2) && (y == 1 || y == sizeY - 2))
-					{
-						b = 21;
-					}
-					else
-					{
-						if((x == 2 || x == sizeX - 3) && (y == 1 || y == sizeY - 2))
-						{
-							b = 1;
-						}
-						else
-						{
-							if((x == 1 || x == sizeX - 2) && (y == 2 || y == sizeY - 3))
-							{
-								b = 1;
-							}
-							else
-							{
-								if(x % 2 == 0 && y % 2 == 0)
-								{
-									b = 2;
-								}
-								else
-								{
-									b = 3;
-								}
-							}
-						}
-					}
+					b = WOOD;
 				}
 				bytes[x][y] = b;
 			}
@@ -252,7 +242,7 @@ public class MapEditor extends JFrame
 		{
 			JOptionPane.showMessageDialog(this, e);
 		}
-
+		
 	}
 	
 	protected void loadMap()
@@ -273,14 +263,14 @@ public class MapEditor extends JFrame
 		byte x = (byte) ((e.getX() - 5) / 25);
 		byte y = (byte) ((e.getY() - 5) / 25);
 		byte c;
-		if(e.getButton() == 3 || e.getModifiersEx() == 4096)
+		if(e.getButton() == MouseEvent.BUTTON3 || e.getModifiersEx() == 4096)
 		{
-			c = 1;
+			c = CLEAR;
 		}
 		else
 		{
-
-			if(e.getButton() == 1 || e.getModifiersEx() == 1024)
+			
+			if(e.getButton() == MouseEvent.BUTTON1 || e.getModifiersEx() == 1024)
 			{
 				c = currentCellType;
 			}
@@ -291,7 +281,7 @@ public class MapEditor extends JFrame
 		}
 		if(x == 0 || y == 0 || x == field.getSizeX() - 1 || y == field.getSizeY() - 1)
 		{
-			c = 2;
+			c = WALL;
 		}
 		try
 		{

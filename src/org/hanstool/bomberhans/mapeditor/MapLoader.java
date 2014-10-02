@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.hanstool.bomberhans.shared.Const;
+import org.hanstool.bomberhans.shared.Const.CellTypes;
 
 public class MapLoader
 {
@@ -16,22 +17,27 @@ public class MapLoader
 	private final byte		woodStayP;
 	private final byte		specialP;
 	private final byte[][]	cellTypes;
-	
+
 	public MapLoader(File file) throws IOException, FileNotFoundException
 	{
 		try (DataInputStream in = new DataInputStream(new FileInputStream(file)))
 		{
 			byte version = in.readByte();
-			
+
+			if(version != 1)
+			{
+				throw new UnsupportedOperationException("Bad File Version " + version);
+			}
+
 			mapName = in.readUTF();
-			
+
 			woodStayP = in.readByte();
 			specialP = in.readByte();
 			sizeX = in.readByte();
 			sizeY = in.readByte();
-			
+
 			cellTypes = new byte[sizeX][sizeY];
-			
+
 			for(byte x = 0; x < sizeX; x = (byte) (x + 1))
 			{
 				for(byte y = 0; y < sizeY; y = (byte) (y + 1))
@@ -41,12 +47,12 @@ public class MapLoader
 			}
 		}
 	}
-	
+
 	public byte[][] getCellTypes()
 	{
 		return cellTypes;
 	}
-	
+
 	public byte[][] getCellTypesWoodReplaced()
 	{
 		byte[][] result = new byte[sizeX][sizeY];
@@ -54,9 +60,9 @@ public class MapLoader
 		{
 			for(int x = 0; x < sizeX; x++ )
 			{
-				if(cellTypes[x][y] == 3 && Const.GameConsts.rand.nextInt(100) >= woodStayP)
+				if(cellTypes[x][y] == CellTypes.WOOD && Const.GameConsts.rand.nextInt(100) >= woodStayP)
 				{
-					result[x][y] = 1;
+					result[x][y] = CellTypes.CLEAR;
 				}
 				else
 				{
@@ -64,30 +70,30 @@ public class MapLoader
 				}
 			}
 		}
-		
+
 		return result;
 	}
-	
+
 	public String getMapName()
 	{
 		return mapName;
 	}
-	
+
 	public byte getSizeX()
 	{
 		return sizeX;
 	}
-	
+
 	public byte getSizeY()
 	{
 		return sizeY;
 	}
-	
+
 	public byte getSpecialP()
 	{
 		return specialP;
 	}
-	
+
 	public byte getWoodStayP()
 	{
 		return woodStayP;
