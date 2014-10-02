@@ -13,11 +13,11 @@ public class CellSpecialPort extends CellSpecial
 	{
 		super(x, y, (byte) 19);
 	}
-
+	
 	private CellSpecialPort findOtherPort(UpdateListener ful)
 	{
-		List list = new LinkedList();
-
+		List<Cell> list = new LinkedList<Cell>();
+		
 		for(byte x = 0; x < ful.getWidth(); x = (byte) (x + 1))
 		{
 			for(byte y = 0; y < ful.getHeight(); y = (byte) (y + 1))
@@ -32,14 +32,14 @@ public class CellSpecialPort extends CellSpecial
 				}
 			}
 		}
-
+		
 		if(list.size() > 0)
 		{
 			return (CellSpecialPort) list.get(Const.GameConsts.rand.nextInt(list.size()));
 		}
 		return null;
 	}
-
+	
 	@Override
 	public void handleWalkOn(SPlayer p, UpdateListener ful)
 	{
@@ -52,7 +52,7 @@ public class CellSpecialPort extends CellSpecial
 			super.handleWalkOn(p, ful);
 		}
 	}
-
+	
 	@Override
 	public boolean setOnFire(byte cellType, UpdateListener ful, SPlayer owner)
 	{

@@ -1,4 +1,4 @@
-package org.hanstool.bomberhans;
+package org.hanstool.bomberhans.client;
 
 import org.hanstool.bomberhans.shared.Player;
 

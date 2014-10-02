@@ -16,7 +16,7 @@ public class Field
 	private final int			width;
 	private final int			height;
 	private final int			woodToSpecial;
-	
+
 	public static byte[][] generateNewField()
 	{
 		int size = 11;
@@ -56,90 +56,90 @@ public class Field
 					{
 						b = 1;
 					}
-
+					
 				}
-
+				
 				bytes[x][y] = b;
 			}
 		}
 		return bytes;
 	}
-	
+
 	public Field(Server server, byte[][] field, int woodToSpecial)
 	{
-		this.ful = new UpdateListener(server, this);
-		this.width = field.length;
-		this.height = field[0].length;
-		this.cells = new Cell[this.width][this.height];
-		this.slots = new LinkedList();
-		for(byte x = 0; x < this.width; x = (byte) (x + 1))
+		ful = new UpdateListener(server, this);
+		width = field.length;
+		height = field[0].length;
+		cells = new Cell[width][height];
+		slots = new LinkedList<>();
+		for(byte x = 0; x < width; x = (byte) (x + 1))
 		{
-			for(byte y = 0; y < this.height; y = (byte) (y + 1))
+			for(byte y = 0; y < height; y = (byte) (y + 1))
 			{
 				Cell c = Cell.createCell(field[x][y], x, y, null, null);
-				this.cells[x][y] = c;
+				cells[x][y] = c;
 				if(c instanceof CellStartSlot)
 				{
-					this.slots.add((CellStartSlot) c);
+					slots.add((CellStartSlot) c);
 				}
 			}
 		}
-		
+
 		this.woodToSpecial = woodToSpecial;
 	}
-	
+
 	public Field(Server server, MapLoader ml)
 	{
 		this(server, ml.getCellTypesWoodReplaced(), ml.getSpecialP());
 	}
-	
+
 	public byte[][] getBytes()
 	{
 		throw new UnsupportedOperationException();
 	}
-	
+
 	public Cell getCell(byte x, byte y)
 	{
-		return this.cells[x][y];
+		return cells[x][y];
 	}
-	
+
 	public byte getCellType(int x, int y)
 	{
-		return this.cells[x][y].getCellType();
+		return cells[x][y].getCellType();
 	}
-	
+
 	public int getHeight()
 	{
-		return this.height;
+		return height;
 	}
-	
+
 	public int getMaxPlayers()
 	{
-		return this.slots.size();
+		return slots.size();
 	}
-	
+
 	public CellStartSlot getSlotCell(byte slot)
 	{
-		return this.slots.get(slot);
+		return slots.get(slot);
 	}
-	
+
 	public int getWidth()
 	{
-		return this.width;
+		return width;
 	}
-	
+
 	public int getWoodToSpecial()
 	{
-		return this.woodToSpecial;
+		return woodToSpecial;
 	}
-	
+
 	public void update(long timePassed)
 	{
-		for(Cell[] collumn : this.cells)
+		for(Cell[] collumn : cells)
 		{
 			for(Cell c : collumn)
 			{
-				c.update(timePassed, this.ful);
+				c.update(timePassed, ful);
 			}
 		}
 	}

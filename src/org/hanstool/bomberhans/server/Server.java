@@ -2,8 +2,8 @@ package org.hanstool.bomberhans.server;
 
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -20,31 +20,69 @@ public class Server implements Runnable
 	private LinkedList<SPlayer>		players;
 	private Field					field;
 	private NetworkStreamAdapter	nsa;
+
+	class ClientAccepter implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			try (ServerSocket serverSocket = new ServerSocket(5636))
+			{
+				while(true)
+				{
+					Socket s = serverSocket.accept();
+					AddPlayer(s);
+				}
+			}
+			catch(IOException e)
+			{
+				// TODO queue Sever Stop
+				System.exit(5);
+			}
+		}
+	}
 	
-	Server() throws FileNotFoundException, IOException
+	public Server()
 	{
 		this(null);
 	}
 	
-	public Server(String mapFile) throws FileNotFoundException, IOException
+	public Server(String mapFile)
 	{
-		this.nsa = new NetworkStreamAdapter();
-		this.players = new LinkedList();
+		nsa = new NetworkStreamAdapter();
+		players = new LinkedList<SPlayer>();
+
+		field = null;
+		if(mapFile != null)
+		{
+			MapLoader ml;
+			try
+			{
+				ml = new MapLoader(new File(mapFile));
+				field = new Field(this, ml);
+			}
+			catch(IOException e)
+			{
+				e.printStackTrace();
+			}
+
+		}
+		if(field == null)
+		{
+			field = new Field(this, Field.generateNewField(), 70);
+		}
 		
-		if(mapFile == null)
-		{
-			this.field = new Field(this, Field.generateNewField(), 70);
-		}
-		else
-		{
-			MapLoader ml = new MapLoader(new File(mapFile));
-			this.field = new Field(this, ml);
-		}
+		Thread serverThread = new Thread(this, "Server Thread");
+		
+		Thread acceptClientsThread = new Thread(new ClientAccepter(), "ClientAcceptThread");
+		
+		serverThread.start();
+		acceptClientsThread.start();
 	}
-	
+
 	void AddPlayer(Socket socket)
 	{
-		if(this.players.size() >= this.field.getMaxPlayers())
+		if(players.size() >= field.getMaxPlayers())
 		{
 			try
 			{
@@ -57,9 +95,9 @@ public class Server implements Runnable
 		}
 		byte slot;
 		CellStartSlot cSlot = null;
-		for(slot = 0; slot <= this.field.getMaxPlayers() - 1; slot = (byte) (slot + 1))
+		for(slot = 0; slot <= field.getMaxPlayers() - 1; slot = (byte) (slot + 1))
 		{
-			cSlot = this.field.ful.getSlotCell(slot);
+			cSlot = field.ful.getSlotCell(slot);
 			if(cSlot.getOwner() == null)
 			{
 				break;
@@ -67,17 +105,17 @@ public class Server implements Runnable
 		}
 		if(cSlot == null)
 		{
-			throw new Error("players.size = " + this.players.size() + " field.getMaxPlayers() = " + this.field.getMaxPlayers() + " no free slot was found :(");
+			throw new Error("players.size = " + players.size() + " field.getMaxPlayers() = " + field.getMaxPlayers() + " no free slot was found :(");
 		}
-		
+
 		SPlayer p = new SPlayer(slot, "player_" + slot, socket, cSlot.getX(), cSlot.getY());
 		cSlot.setOwner(p);
-		synchronized(this.players)
+		synchronized(players)
 		{
-			this.players.add(p);
+			players.add(p);
 		}
 	}
-	
+
 	void netHandleInput(SPlayer p, UpdateListener ful) throws IOException
 	{
 		while(true)
@@ -105,17 +143,17 @@ public class Server implements Runnable
 					p.lenghtOfNextPartialFrame = len;
 					return;
 				}
-				
+
 			}
-			
+
 			int command = dis.read();
 			len-- ;
-			
+
 			if(Const.logging)
 			{
 				System.out.print("rcv: " + NetworkStreamAdapter.NAMES[command]);
 			}
-			
+
 			switch(command)
 			{
 				case 0:
@@ -125,17 +163,17 @@ public class Server implements Runnable
 					dis.read(buffer, 0, len);
 					len -= buffer.length;
 					p.setName(new String(buffer, "utf-8"));
-					
-					for(SPlayer pl : this.players)
+
+					for(SPlayer pl : players)
 					{
 						sendToClient((byte) 8, new Object[] { Byte.valueOf(pl.getSlot()), pl.getName() });
 					}
-					
-					break;
+				
+				break;
 				case 2:
 					byte state = dis.readByte();
 					len-- ;
-					
+
 					if(state == 13)
 					{
 						if(p.getCurrentBombs() < p.getMax_bombs())
@@ -148,13 +186,13 @@ public class Server implements Runnable
 								{
 									case 3:
 										dY = 0.4F;
-										break;
+									break;
 									case 9:
 										dX = 0.4F;
-										break;
+									break;
 									case 5:
 										dX = -0.4F;
-										break;
+									break;
 									case 7:
 										dY = -0.4F;
 									case 4:
@@ -172,59 +210,59 @@ public class Server implements Runnable
 						}
 					}
 					p.setState(state);
-					
-					break;
+				
+				break;
 				case 4:
 					throw new UnsupportedOperationException("NetworkCommand not implemented");
 				case 3:
 					throw new UnsupportedOperationException("NetworkCommand not implemented");
 			}
-			
+
 			if(len > 0)
 			{
 				byte[] buffer = new byte[len];
 				dis.read(buffer);
 				throw new Error(len + "unused byte " + Arrays.toString(buffer));
 			}
-			
+
 			if(len < 0)
 			{
 				throw new Error( -len + " bytes too much ");
 			}
-			
+
 			if(Const.logging)
 			{
 				System.out.println();
 			}
 		}
 	}
-	
+
 	private void netHandlePlayerDrop(SPlayer p)
 	{
-		this.nsa.queue((byte) 13, new Object[] { Byte.valueOf(p.getSlot()) });
+		nsa.queue((byte) 13, new Object[] { Byte.valueOf(p.getSlot()) });
 	}
-	
+
 	private void netSendPlayerToClient(SPlayer p)
 	{
 		sendToClient((byte) 12, new Object[] { Byte.valueOf(p.getSlot()), Byte.valueOf(p.getState()), Float.valueOf(p.getX()), Float.valueOf(p.getY()), Float.valueOf(p.getSpeed()), Byte.valueOf(p.getPower()), Byte.valueOf(p.getScore()) });
 	}
-	
+
 	private void netSendWholeFieldToClient()
 	{
-		short w = (short) this.field.getWidth();
-		short h = (short) this.field.getHeight();
+		short w = (short) field.getWidth();
+		short h = (short) field.getHeight();
 		byte[] buff = new byte[w * h];
-		
+
 		for(int x = 0; x < w; x++ )
 		{
 			for(int y = 0; y < h; y++ )
 			{
-				buff[x * h + y] = this.field.getCellType(x, y);
+				buff[x * h + y] = field.getCellType(x, y);
 			}
 		}
-		this.nsa.queue((byte) 11, new Object[] { Short.valueOf(w), Short.valueOf(h), buff });
+		nsa.queue((byte) 11, new Object[] { Short.valueOf(w), Short.valueOf(h), buff });
 	}
-	
+
 	@Override
 	public void run()
 	{
@@ -234,15 +272,15 @@ public class Server implements Runnable
 		{
 			long timePassed = System.currentTimeMillis() - lastTime;
 			lastTime = System.currentTimeMillis();
-			
-			synchronized(this.players)
+
+			synchronized(players)
 			{
-				for(Iterator it = this.players.iterator(); it.hasNext();)
+				for(Iterator<SPlayer> it = players.iterator(); it.hasNext();)
 				{
-					SPlayer p = (SPlayer) it.next();
+					SPlayer p = it.next();
 					try
 					{
-						netHandleInput(p, this.field.ful);
+						netHandleInput(p, field.ful);
 						if(p.getIsNew())
 						{
 							netSendWholeFieldToClient();
@@ -251,40 +289,40 @@ public class Server implements Runnable
 					}
 					catch(IOException e)
 					{
-						this.field.ful.getSlotCell(p.getSlot()).setOwner(null);
-						
+						field.ful.getSlotCell(p.getSlot()).setOwner(null);
+
 						it.remove();
 						netHandlePlayerDrop(p);
 					}
 				}
-				
-				for(SPlayer p : this.players)
+
+				for(SPlayer p : players)
 				{
-					p.update(timePassed, this.field.ful);
+					p.update(timePassed, field.ful);
 				}
-				
-				for(SPlayer p : this.players)
+
+				for(SPlayer p : players)
 				{
 					if(p.getDidChange())
 					{
 						netSendPlayerToClient(p);
 						p.setDidChange(false);
 					}
-					
+
 				}
-				
-				this.field.update(timePassed);
-				
-				if( !this.nsa.isQueueEmpty())
+
+				field.update(timePassed);
+
+				if( !nsa.isQueueEmpty())
 				{
-					this.nsa.queue((byte) 14, new Object[0]);
-					
-					for(Iterator it = this.players.iterator(); it.hasNext();)
+					nsa.queue((byte) 14, new Object[0]);
+
+					for(Iterator<SPlayer> it = players.iterator(); it.hasNext();)
 					{
-						SPlayer p = (SPlayer) it.next();
+						SPlayer p = it.next();
 						try
 						{
-							this.nsa.writeToStream(p.getSocket().getOutputStream());
+							nsa.writeToStream(p.getSocket().getOutputStream());
 						}
 						catch(IOException e)
 						{
@@ -293,10 +331,10 @@ public class Server implements Runnable
 						}
 					}
 				}
-				
+
 			}
-			
-			this.nsa.clear();
+
+			nsa.clear();
 			try
 			{
 				Thread.sleep(50L);
@@ -306,9 +344,9 @@ public class Server implements Runnable
 			}
 		}
 	}
-	
+
 	void sendToClient(byte networkCMD, Object[] params)
 	{
-		this.nsa.queue(networkCMD, params);
+		nsa.queue(networkCMD, params);
 	}
 }

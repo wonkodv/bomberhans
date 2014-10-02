@@ -1,4 +1,4 @@
-package org.hanstool.bomberhans;
+package org.hanstool.bomberhans.client;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -41,7 +41,7 @@ public abstract class GUI_graphics extends JFrame
 	final FieldPanel			field;
 	JTextField					kl;
 	private JTextArea			logTA;
-	
+
 	static
 	{
 		try
@@ -52,13 +52,13 @@ public abstract class GUI_graphics extends JFrame
 		{
 		}
 	}
-	
+
 	public GUI_graphics()
 	{
 		setLayout(null);
-		
+
 		propsLoad();
-		
+
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e)
@@ -66,58 +66,58 @@ public abstract class GUI_graphics extends JFrame
 				System.exit(0);
 			}
 		});
-		this.nameTFD = new JTextField(this.prop.getProperty("name"));
-		this.nameTFD.setBounds(20, 20, 200, 25);
-		add(this.nameTFD);
-		this.hostTFD = new JTextField(this.prop.getProperty("host"));
-		this.hostTFD.setBounds(20, 70, 200, 25);
-		add(this.hostTFD);
-		
-		this.connectBTN = new JButton("Connect");
-		this.connectBTN.addActionListener(new ActionListener() {
+		nameTFD = new JTextField(prop.getProperty("name"));
+		nameTFD.setBounds(20, 20, 200, 25);
+		add(nameTFD);
+		hostTFD = new JTextField(prop.getProperty("host"));
+		hostTFD.setBounds(20, 70, 200, 25);
+		add(hostTFD);
+
+		connectBTN = new JButton("Connect");
+		connectBTN.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
-				GUI_graphics.this.connect(GUI_graphics.this.hostTFD.getText(), GUI_graphics.this.nameTFD.getText());
-				GUI_graphics.this.prop.put("host", GUI_graphics.this.hostTFD.getText());
-				GUI_graphics.this.prop.put("name", GUI_graphics.this.nameTFD.getText());
+				GUI_graphics.this.connect(hostTFD.getText(), nameTFD.getText());
+				prop.put("host", hostTFD.getText());
+				prop.put("name", nameTFD.getText());
 				GUI_graphics.this.propsSave();
-				GUI_graphics.this.kl.requestFocus();
+				kl.requestFocus();
 			}
 		});
-		this.connectBTN.setBounds(20, 120, 200, 25);
-		add(this.connectBTN);
-		
-		this.readyCBX = new JCheckBox("Ready");
-		this.readyCBX.addActionListener(new ActionListener() {
+		connectBTN.setBounds(20, 120, 200, 25);
+		add(connectBTN);
+
+		readyCBX = new JCheckBox("Ready");
+		readyCBX.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
-				GUI_graphics.this.setReady(GUI_graphics.this.readyCBX.isSelected());
+				GUI_graphics.this.setReady(readyCBX.isSelected());
 			}
 		});
-		this.readyCBX.setBounds(20, 170, 200, 25);
-		add(this.readyCBX);
-		
-		this.field = new FieldPanel();
-		this.field.setBounds(250, 30, 300, 300);
-		this.field.setFocusable(false);
-		this.field.addMouseListener(new MouseAdapter() {
+		readyCBX.setBounds(20, 170, 200, 25);
+		add(readyCBX);
+
+		field = new FieldPanel();
+		field.setBounds(250, 30, 300, 300);
+		field.setFocusable(false);
+		field.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e)
 			{
-				GUI_graphics.this.kl.requestFocus();
+				kl.requestFocus();
 			}
 		});
-		this.kl = new JTextField("input here");
-		this.kl.setBounds( -20, 210, 10, 25);
-		add(this.kl);
-		this.kl.addKeyListener(new KeyListener() {
+		kl = new JTextField("input here");
+		kl.setBounds( -20, 210, 10, 25);
+		add(kl);
+		kl.addKeyListener(new KeyListener() {
 			private boolean	run_n	= false;
 			private boolean	run_e	= false;
 			private boolean	run_s	= false;
 			private boolean	run_w	= false;
-			
+
 			@Override
 			public void keyPressed(KeyEvent e)
 			{
@@ -126,27 +126,27 @@ public abstract class GUI_graphics extends JFrame
 				{
 					case 38:
 					case 87:
-						this.run_n = true;
+						run_n = true;
 						state = 2;
-						break;
+					break;
 					case 40:
 					case 83:
-						this.run_s = true;
+						run_s = true;
 						state = 6;
-						break;
+					break;
 					case 37:
 					case 65:
-						this.run_w = true;
+						run_w = true;
 						state = 8;
-						break;
+					break;
 					case 39:
 					case 68:
-						this.run_e = true;
+						run_e = true;
 						state = 4;
-						break;
+					break;
 					case 32:
 						state = 13;
-						break;
+					break;
 					default:
 						return;
 				}
@@ -154,7 +154,7 @@ public abstract class GUI_graphics extends JFrame
 				e.setKeyCode(0);
 				e.setKeyChar('\000');
 			}
-			
+
 			@Override
 			public void keyReleased(KeyEvent e)
 			{
@@ -162,45 +162,45 @@ public abstract class GUI_graphics extends JFrame
 				{
 					case 38:
 					case 87:
-						this.run_n = false;
-						break;
+						run_n = false;
+					break;
 					case 40:
 					case 83:
-						this.run_s = false;
-						break;
+						run_s = false;
+					break;
 					case 37:
 					case 65:
-						this.run_w = false;
-						break;
+						run_w = false;
+					break;
 					case 39:
 					case 68:
-						this.run_e = false;
-						break;
+						run_e = false;
+					break;
 					case 32:
-						break;
+					break;
 					default:
 						return;
 				}
 				byte state;
-				if(this.run_n)
+				if(run_n)
 				{
 					state = 2;
 				}
 				else
 				{
-					if(this.run_s)
+					if(run_s)
 					{
 						state = 6;
 					}
 					else
 					{
-						if(this.run_w)
+						if(run_w)
 						{
 							state = 8;
 						}
 						else
 						{
-							if(this.run_e)
+							if(run_e)
 							{
 								state = 4;
 							}
@@ -212,11 +212,11 @@ public abstract class GUI_graphics extends JFrame
 					}
 				}
 				GUI_graphics.this.setPlayerState(state);
-				
+
 				e.setKeyCode(0);
 				e.setKeyChar('\000');
 			}
-			
+
 			@Override
 			public void keyTyped(KeyEvent e)
 			{
@@ -224,115 +224,115 @@ public abstract class GUI_graphics extends JFrame
 				e.setKeyChar('\000');
 			}
 		});
-		this.kl.addFocusListener(new FocusListener() {
+		kl.addFocusListener(new FocusListener() {
 			@Override
 			public void focusGained(FocusEvent e)
 			{
-				GUI_graphics.this.field.setFocused(true);
+				field.setFocused(true);
 			}
-			
+
 			@Override
 			public void focusLost(FocusEvent e)
 			{
-				GUI_graphics.this.field.setFocused(false);
+				field.setFocused(false);
 			}
 		});
-		add(this.field);
-		
-		this.logTA = new JTextArea("log");
-		this.logTA.setWrapStyleWord(true);
-		this.logTA.setBounds(20, 220, 200, 400);
-		add(this.logTA);
-		
+		add(field);
+
+		logTA = new JTextArea("log");
+		logTA.setWrapStyleWord(true);
+		logTA.setBounds(20, 220, 200, 400);
+		add(logTA);
+
 		pack();
 		setVisible(true);
 	}
-	
+
 	protected abstract void connect(String paramString1, String paramString2);
-	
+
 	public void disconnect()
 	{
-		this.field.disconnect();
+		field.disconnect();
 	}
-	
+
 	@Override
 	public Dimension getPreferredSize()
 	{
 		return new Dimension(1400, 800);
 	}
-	
+
 	public void playerDrop(byte slot)
 	{
-		this.field.playerDrop(slot);
+		field.playerDrop(slot);
 	}
-	
+
 	public void playerJoined(int slot, String name)
 	{
-		this.field.playerJoined(slot, name);
-		this.logTA.insert(name + " joined\n", 0);
+		field.playerJoined(slot, name);
+		logTA.insert(name + " joined\n", 0);
 	}
-	
+
 	public void playerScored(byte p1, byte p2)
 	{
 		if(p1 == p2)
 		{
-			this.logTA.insert(this.field.players.get(p1).getName() + " noob!\n", 0);
+			logTA.insert(field.players.get(p1).getName() + " noob!\n", 0);
 		}
 		else
 		{
-			this.logTA.insert(this.field.players.get(p1).getName() + " > " + this.field.players.get(p2).getName() + "\n", 0);
+			logTA.insert(field.players.get(p1).getName() + " > " + field.players.get(p2).getName() + "\n", 0);
 		}
 	}
-	
+
 	private void propsLoad()
 	{
-		this.prop = new Properties();
+		prop = new Properties();
 		try
 		{
-			this.prop.load(new FileReader(new File("BomberHans.cfg")));
+			prop.load(new FileReader(new File("BomberHans.cfg")));
 		}
 		catch(Exception e1)
 		{
-			this.prop.put("host", "enter Host");
-			this.prop.put("name", "enter UserName");
+			prop.put("host", "enter Host");
+			prop.put("name", "enter UserName");
 		}
 	}
-	
+
 	void propsSave()
 	{
 		try
 		{
-			this.prop.store(new FileWriter(new File("BomberHans.cfg")), "saves BomberhansConfigs");
+			prop.store(new FileWriter(new File("BomberHans.cfg")), "saves BomberhansConfigs");
 		}
 		catch(IOException localIOException)
 		{
 		}
 	}
-	
+
 	public void reDraw()
 	{
-		this.field.repaint();
+		field.repaint();
 	}
-	
+
 	protected abstract void setPlayerState(byte paramByte);
-	
+
 	protected abstract void setReady(boolean paramBoolean);
-	
+
 	public void updateCell(byte x, byte y, byte cellType)
 	{
-		this.field.updateCell(x, y, cellType);
+		field.updateCell(x, y, cellType);
 	}
-	
+
 	public void updateField(byte[][] newField)
 	{
-		this.field.setCellTypes(newField);
+		field.setCellTypes(newField);
 	}
-	
+
 	public void updatePlayer(byte slot, byte state, float x, float y, float speed, byte power, byte score)
 	{
-		this.field.updatePlayer(slot, state, x, y, speed, power, score);
+		field.updatePlayer(slot, state, x, y, speed, power, score);
 	}
-	
+
 	public static class FieldPanel extends JPanel
 	{
 		private static final long	serialVersionUID	= -5459713617157096202L;
@@ -340,54 +340,54 @@ public abstract class GUI_graphics extends JFrame
 		private boolean				focused;
 		private byte[][]			cellTypes;
 		final List<GPlayer>			players;
-		
+
 		public FieldPanel()
 		{
-			this.players = new ArrayList<GPlayer>(8);
+			players = new ArrayList<GPlayer>(8);
 			for(byte i = 0; i < 8; i = (byte) (i + 1))
 			{
-				this.players.add(new GPlayer(i));
+				players.add(new GPlayer(i));
 			}
-			
+
 			try
 			{
-				this.imgBuffer = new ImageBuffer();
+				imgBuffer = new ImageBuffer();
 			}
 			catch(IOException e)
 			{
 				throw new Error(e);
 			}
 		}
-		
+
 		public void disconnect()
 		{
-			for(GPlayer p : this.players)
+			for(GPlayer p : players)
 			{
 				p.setJoined(false);
 			}
 			setCellTypes(null);
 		}
-		
+
 		public synchronized byte getCellType(byte x, byte y)
 		{
-			return this.cellTypes[x][y];
+			return cellTypes[x][y];
 		}
-		
+
 		public synchronized byte getSizeX()
 		{
-			return (byte) this.cellTypes.length;
+			return (byte) cellTypes.length;
 		}
-		
+
 		public synchronized byte getSizeY()
 		{
-			return (byte) this.cellTypes[0].length;
+			return (byte) cellTypes[0].length;
 		}
-		
+
 		@Override
 		public synchronized void paint(Graphics g)
 		{
 			super.paint(g);
-			if(this.focused)
+			if(focused)
 			{
 				g.setColor(Color.DARK_GRAY);
 			}
@@ -396,26 +396,26 @@ public abstract class GUI_graphics extends JFrame
 				g.setColor(Color.LIGHT_GRAY);
 			}
 			g.drawRect(1, 1, getWidth() - 2, getHeight() - 2);
-			
-			if(this.cellTypes == null)
+
+			if(cellTypes == null)
 			{
 				return;
 			}
 			byte[] col;
-			for(int x = 0; x < this.cellTypes.length; x++ )
+			for(int x = 0; x < cellTypes.length; x++ )
 			{
-				col = this.cellTypes[x];
+				col = cellTypes[x];
 				int left = 5 + x * 25;
 				for(int y = 0; y < col.length; y++ )
 				{
 					int top = 5 + y * 25;
-					
-					BufferedImage img = this.imgBuffer.getcellImage(col[y]);
+
+					BufferedImage img = imgBuffer.getcellImage(col[y]);
 					g.drawImage(img, left, top, 25, 25, null);
 				}
 			}
-			
-			for(GPlayer p : this.players)
+
+			for(GPlayer p : players)
 			{
 				if(p.getJoined())
 				{
@@ -423,25 +423,25 @@ public abstract class GUI_graphics extends JFrame
 					float y = p.getY();
 					byte slot = p.getSlot();
 					byte state = p.getState();
-					
-					BufferedImage img = this.imgBuffer.getHansImage(state, slot);
-					
+
+					BufferedImage img = imgBuffer.getHansImage(state, slot);
+
 					g.drawImage(img, Math.round(5.0F + (x - 0.5F) * 25.0F), Math.round(5.0F + (y - 0.5F) * 25.0F), 25, 25, null);
 				}
 			}
 		}
-		
+
 		synchronized void playerDrop(byte slot)
 		{
-			this.players.get(slot).setJoined(false);
+			players.get(slot).setJoined(false);
 		}
-		
+
 		public synchronized void playerJoined(int slot, String name)
 		{
-			this.players.get(slot).setName(name);
-			this.players.get(slot).setJoined(true);
+			players.get(slot).setName(name);
+			players.get(slot).setJoined(true);
 		}
-		
+
 		public synchronized void setCellTypes(byte[][] cellTypes)
 		{
 			this.cellTypes = cellTypes;
@@ -450,21 +450,26 @@ public abstract class GUI_graphics extends JFrame
 				setBounds(getX(), getY(), 10 + 25 * cellTypes.length, 10 + 25 * cellTypes[0].length);
 			}
 		}
-		
+
 		public void setFocused(boolean focused)
 		{
 			this.focused = focused;
 			repaint();
 		}
-		
+
 		public synchronized void updateCell(byte x, byte y, byte cellType)
 		{
-			this.cellTypes[x][y] = cellType;
+			cellTypes[x][y] = cellType;
 		}
-		
+
 		synchronized void updatePlayer(byte slot, byte state, float x, float y, float speed, byte power, byte score)
 		{
-			this.players.get(slot).updatePlayer(state, x, y, speed, power, score);
+			players.get(slot).updatePlayer(state, x, y, speed, power, score);
 		}
+	}
+	
+	public void setServerAddress(String string)
+	{
+		hostTFD.setText(string);
 	}
 }

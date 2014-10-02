@@ -1,4 +1,4 @@
-package org.hanstool.bomberhans;
+package org.hanstool.bomberhans.client;
 
 import java.io.DataInputStream;
 import java.io.IOException;

@@ -16,79 +16,80 @@ public class MapLoader
 	private final byte		woodStayP;
 	private final byte		specialP;
 	private final byte[][]	cellTypes;
-
+	
 	public MapLoader(File file) throws IOException, FileNotFoundException
 	{
-		DataInputStream in = new DataInputStream(new FileInputStream(file));
-
-		byte version = in.readByte();
-
-		this.mapName = in.readUTF();
-
-		this.woodStayP = in.readByte();
-		this.specialP = in.readByte();
-		this.sizeX = in.readByte();
-		this.sizeY = in.readByte();
-
-		this.cellTypes = new byte[this.sizeX][this.sizeY];
-
-		for(byte x = 0; x < this.sizeX; x = (byte) (x + 1))
+		try (DataInputStream in = new DataInputStream(new FileInputStream(file)))
 		{
-			for(byte y = 0; y < this.sizeY; y = (byte) (y + 1))
+			byte version = in.readByte();
+			
+			mapName = in.readUTF();
+			
+			woodStayP = in.readByte();
+			specialP = in.readByte();
+			sizeX = in.readByte();
+			sizeY = in.readByte();
+			
+			cellTypes = new byte[sizeX][sizeY];
+			
+			for(byte x = 0; x < sizeX; x = (byte) (x + 1))
 			{
-				this.cellTypes[x][y] = in.readByte();
+				for(byte y = 0; y < sizeY; y = (byte) (y + 1))
+				{
+					cellTypes[x][y] = in.readByte();
+				}
 			}
 		}
 	}
-
+	
 	public byte[][] getCellTypes()
 	{
-		return this.cellTypes;
+		return cellTypes;
 	}
-
+	
 	public byte[][] getCellTypesWoodReplaced()
 	{
-		byte[][] result = new byte[this.sizeX][this.sizeY];
-		for(int y = 0; y < this.sizeY; y++ )
+		byte[][] result = new byte[sizeX][sizeY];
+		for(int y = 0; y < sizeY; y++ )
 		{
-			for(int x = 0; x < this.sizeX; x++ )
+			for(int x = 0; x < sizeX; x++ )
 			{
-				if(this.cellTypes[x][y] == 3 && Const.GameConsts.rand.nextInt(100) >= this.woodStayP)
+				if(cellTypes[x][y] == 3 && Const.GameConsts.rand.nextInt(100) >= woodStayP)
 				{
 					result[x][y] = 1;
 				}
 				else
 				{
-					result[x][y] = this.cellTypes[x][y];
+					result[x][y] = cellTypes[x][y];
 				}
 			}
 		}
-
+		
 		return result;
 	}
-
+	
 	public String getMapName()
 	{
-		return this.mapName;
+		return mapName;
 	}
-
+	
 	public byte getSizeX()
 	{
-		return this.sizeX;
+		return sizeX;
 	}
-
+	
 	public byte getSizeY()
 	{
-		return this.sizeY;
+		return sizeY;
 	}
-
+	
 	public byte getSpecialP()
 	{
-		return this.specialP;
+		return specialP;
 	}
-
+	
 	public byte getWoodStayP()
 	{
-		return this.woodStayP;
+		return woodStayP;
 	}
 }
