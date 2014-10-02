@@ -30,6 +30,8 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
 
+import org.hanstool.bomberhans.shared.Const.PlayerState;
+
 public abstract class GUI_graphics extends JFrame
 {
 	Properties					prop;
@@ -41,7 +43,7 @@ public abstract class GUI_graphics extends JFrame
 	final FieldPanel			field;
 	JTextField					kl;
 	private JTextArea			logTA;
-
+	
 	static
 	{
 		try
@@ -52,13 +54,13 @@ public abstract class GUI_graphics extends JFrame
 		{
 		}
 	}
-
+	
 	public GUI_graphics()
 	{
 		setLayout(null);
-
+		
 		propsLoad();
-
+		
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e)
@@ -72,7 +74,7 @@ public abstract class GUI_graphics extends JFrame
 		hostTFD = new JTextField(prop.getProperty("host"));
 		hostTFD.setBounds(20, 70, 200, 25);
 		add(hostTFD);
-
+		
 		connectBTN = new JButton("Connect");
 		connectBTN.addActionListener(new ActionListener() {
 			@Override
@@ -87,7 +89,7 @@ public abstract class GUI_graphics extends JFrame
 		});
 		connectBTN.setBounds(20, 120, 200, 25);
 		add(connectBTN);
-
+		
 		readyCBX = new JCheckBox("Ready");
 		readyCBX.addActionListener(new ActionListener() {
 			@Override
@@ -98,7 +100,7 @@ public abstract class GUI_graphics extends JFrame
 		});
 		readyCBX.setBounds(20, 170, 200, 25);
 		add(readyCBX);
-
+		
 		field = new FieldPanel();
 		field.setBounds(250, 30, 300, 300);
 		field.setFocusable(false);
@@ -117,106 +119,101 @@ public abstract class GUI_graphics extends JFrame
 			private boolean	run_e	= false;
 			private boolean	run_s	= false;
 			private boolean	run_w	= false;
-
+			
 			@Override
 			public void keyPressed(KeyEvent e)
 			{
 				byte state;
 				switch(e.getKeyCode())
 				{
-					case 38:
-					case 87:
+					case KeyEvent.VK_UP:
+					case KeyEvent.VK_W:
 						run_n = true;
-						state = 2;
+						state = PlayerState.RUNNING_N;
 					break;
-					case 40:
-					case 83:
+					case KeyEvent.VK_DOWN:
+					case KeyEvent.VK_S:
 						run_s = true;
-						state = 6;
+						state = PlayerState.RUNNING_S;
 					break;
-					case 37:
-					case 65:
+					case KeyEvent.VK_LEFT:
+					case KeyEvent.VK_A:
 						run_w = true;
-						state = 8;
+						state = PlayerState.RUNNING_W;
 					break;
-					case 39:
-					case 68:
+					case KeyEvent.VK_RIGHT:
+					case KeyEvent.VK_D:
 						run_e = true;
-						state = 4;
+						state = PlayerState.RUNNING_E;
 					break;
-					case 32:
-						state = 13;
+					case KeyEvent.VK_SPACE:
+						state = PlayerState.PLACING_BOMB;
 					break;
+
 					default:
 						return;
 				}
 				GUI_graphics.this.setPlayerState(state);
 				e.setKeyCode(0);
-				e.setKeyChar('\000');
+				e.setKeyChar('\u0000');
 			}
-
+			
 			@Override
 			public void keyReleased(KeyEvent e)
 			{
 				switch(e.getKeyCode())
 				{
-					case 38:
-					case 87:
+					case KeyEvent.VK_UP:
+					case KeyEvent.VK_W:
 						run_n = false;
-					break;
-					case 40:
-					case 83:
+						break;
+					case KeyEvent.VK_DOWN:
+					case KeyEvent.VK_S:
 						run_s = false;
-					break;
-					case 37:
-					case 65:
+						break;
+					case KeyEvent.VK_LEFT:
+					case KeyEvent.VK_A:
 						run_w = false;
-					break;
-					case 39:
-					case 68:
+						break;
+					case KeyEvent.VK_RIGHT:
+					case KeyEvent.VK_D:
 						run_e = false;
-					break;
-					case 32:
-					break;
+						break;
+					case KeyEvent.VK_SPACE:
+
+						break;
+
 					default:
 						return;
 				}
 				byte state;
 				if(run_n)
 				{
-					state = 2;
+					state = PlayerState.RUNNING_N;
+				}
+				else if(run_s)
+				{
+					state = PlayerState.RUNNING_S;
+				}
+				else if(run_w)
+				{
+					state = PlayerState.RUNNING_W;
+				}
+				else if(run_e)
+				{
+					state = PlayerState.RUNNING_E;
 				}
 				else
 				{
-					if(run_s)
-					{
-						state = 6;
-					}
-					else
-					{
-						if(run_w)
-						{
-							state = 8;
-						}
-						else
-						{
-							if(run_e)
-							{
-								state = 4;
-							}
-							else
-							{
-								state = 10;
-							}
-						}
-					}
+					state = PlayerState.IDLE;
 				}
+				
 				GUI_graphics.this.setPlayerState(state);
-
+				
 				e.setKeyCode(0);
 				e.setKeyChar('\000');
 			}
-
+			
 			@Override
 			public void keyTyped(KeyEvent e)
 			{
@@ -230,7 +227,7 @@ public abstract class GUI_graphics extends JFrame
 			{
 				field.setFocused(true);
 			}
-
+			
 			@Override
 			public void focusLost(FocusEvent e)
 			{
@@ -238,52 +235,52 @@ public abstract class GUI_graphics extends JFrame
 			}
 		});
 		add(field);
-
+		
 		logTA = new JTextArea("log");
 		logTA.setWrapStyleWord(true);
 		logTA.setBounds(20, 220, 200, 400);
 		add(logTA);
-
+		
 		pack();
 		setVisible(true);
 	}
-
+	
 	protected abstract void connect(String paramString1, String paramString2);
-
+	
 	public void disconnect()
 	{
 		field.disconnect();
 	}
-
+	
 	@Override
 	public Dimension getPreferredSize()
 	{
 		return new Dimension(1400, 800);
 	}
-
+	
 	public void playerDrop(byte slot)
 	{
 		field.playerDrop(slot);
 	}
-
+	
 	public void playerJoined(int slot, String name)
 	{
 		field.playerJoined(slot, name);
 		logTA.insert(name + " joined\n", 0);
 	}
-
+	
 	public void playerScored(byte p1, byte p2)
 	{
 		if(p1 == p2)
 		{
-			logTA.insert(field.players.get(p1).getName() + " noob!\n", 0);
+			logTA.insert(field.players.get(p1).getName() + " suicided!\n", 0);
 		}
 		else
 		{
 			logTA.insert(field.players.get(p1).getName() + " > " + field.players.get(p2).getName() + "\n", 0);
 		}
 	}
-
+	
 	private void propsLoad()
 	{
 		prop = new Properties();
@@ -297,7 +294,7 @@ public abstract class GUI_graphics extends JFrame
 			prop.put("name", "enter UserName");
 		}
 	}
-
+	
 	void propsSave()
 	{
 		try
@@ -308,31 +305,31 @@ public abstract class GUI_graphics extends JFrame
 		{
 		}
 	}
-
+	
 	public void reDraw()
 	{
 		field.repaint();
 	}
-
+	
 	protected abstract void setPlayerState(byte paramByte);
-
+	
 	protected abstract void setReady(boolean paramBoolean);
-
+	
 	public void updateCell(byte x, byte y, byte cellType)
 	{
 		field.updateCell(x, y, cellType);
 	}
-
+	
 	public void updateField(byte[][] newField)
 	{
 		field.setCellTypes(newField);
 	}
-
+	
 	public void updatePlayer(byte slot, byte state, float x, float y, float speed, byte power, byte score)
 	{
 		field.updatePlayer(slot, state, x, y, speed, power, score);
 	}
-
+	
 	public static class FieldPanel extends JPanel
 	{
 		private static final long	serialVersionUID	= -5459713617157096202L;
@@ -340,7 +337,7 @@ public abstract class GUI_graphics extends JFrame
 		private boolean				focused;
 		private byte[][]			cellTypes;
 		final List<GPlayer>			players;
-
+		
 		public FieldPanel()
 		{
 			players = new ArrayList<GPlayer>(8);
@@ -348,7 +345,7 @@ public abstract class GUI_graphics extends JFrame
 			{
 				players.add(new GPlayer(i));
 			}
-
+			
 			try
 			{
 				imgBuffer = new ImageBuffer();
@@ -358,7 +355,7 @@ public abstract class GUI_graphics extends JFrame
 				throw new Error(e);
 			}
 		}
-
+		
 		public void disconnect()
 		{
 			for(GPlayer p : players)
@@ -367,22 +364,22 @@ public abstract class GUI_graphics extends JFrame
 			}
 			setCellTypes(null);
 		}
-
+		
 		public synchronized byte getCellType(byte x, byte y)
 		{
 			return cellTypes[x][y];
 		}
-
+		
 		public synchronized byte getSizeX()
 		{
 			return (byte) cellTypes.length;
 		}
-
+		
 		public synchronized byte getSizeY()
 		{
 			return (byte) cellTypes[0].length;
 		}
-
+		
 		@Override
 		public synchronized void paint(Graphics g)
 		{
@@ -396,7 +393,7 @@ public abstract class GUI_graphics extends JFrame
 				g.setColor(Color.LIGHT_GRAY);
 			}
 			g.drawRect(1, 1, getWidth() - 2, getHeight() - 2);
-
+			
 			if(cellTypes == null)
 			{
 				return;
@@ -409,12 +406,12 @@ public abstract class GUI_graphics extends JFrame
 				for(int y = 0; y < col.length; y++ )
 				{
 					int top = 5 + y * 25;
-
+					
 					BufferedImage img = imgBuffer.getcellImage(col[y]);
 					g.drawImage(img, left, top, 25, 25, null);
 				}
 			}
-
+			
 			for(GPlayer p : players)
 			{
 				if(p.getJoined())
@@ -423,25 +420,25 @@ public abstract class GUI_graphics extends JFrame
 					float y = p.getY();
 					byte slot = p.getSlot();
 					byte state = p.getState();
-
+					
 					BufferedImage img = imgBuffer.getHansImage(state, slot);
-
+					
 					g.drawImage(img, Math.round(5.0F + (x - 0.5F) * 25.0F), Math.round(5.0F + (y - 0.5F) * 25.0F), 25, 25, null);
 				}
 			}
 		}
-
+		
 		synchronized void playerDrop(byte slot)
 		{
 			players.get(slot).setJoined(false);
 		}
-
+		
 		public synchronized void playerJoined(int slot, String name)
 		{
 			players.get(slot).setName(name);
 			players.get(slot).setJoined(true);
 		}
-
+		
 		public synchronized void setCellTypes(byte[][] cellTypes)
 		{
 			this.cellTypes = cellTypes;
@@ -450,24 +447,24 @@ public abstract class GUI_graphics extends JFrame
 				setBounds(getX(), getY(), 10 + 25 * cellTypes.length, 10 + 25 * cellTypes[0].length);
 			}
 		}
-
+		
 		public void setFocused(boolean focused)
 		{
 			this.focused = focused;
 			repaint();
 		}
-
+		
 		public synchronized void updateCell(byte x, byte y, byte cellType)
 		{
 			cellTypes[x][y] = cellType;
 		}
-
+		
 		synchronized void updatePlayer(byte slot, byte state, float x, float y, float speed, byte power, byte score)
 		{
 			players.get(slot).updatePlayer(state, x, y, speed, power, score);
 		}
 	}
-	
+
 	public void setServerAddress(String string)
 	{
 		hostTFD.setText(string);

@@ -20,15 +20,15 @@ public class Network implements Runnable
 	public Network(GUI.GuiInteractor guiInteractor, String hostName, String userName) throws UnknownHostException, IOException
 	{
 		this.guiInteractor = guiInteractor;
-		this.nsa = new NetworkStreamAdapter();
+		nsa = new NetworkStreamAdapter();
 
-		this.sock = new Socket(hostName, 5636);
+		sock = new Socket(hostName, 5636);
 
-		this.nsa.queue((byte) 1, new Object[] { userName });
-		this.nsa.writeToStream(this.sock.getOutputStream());
-		this.nsa.clear();
+		nsa.queue((byte) 1, new Object[] { userName });
+		nsa.writeToStream(sock.getOutputStream());
+		nsa.clear();
 
-		this.dis = new DataInputStream(this.sock.getInputStream());
+		dis = new DataInputStream(sock.getInputStream());
 
 		new Thread(this).start();
 	}
@@ -40,9 +40,9 @@ public class Network implements Runnable
 		{
 			while(true)
 			{
-				int len = this.dis.readShort();
+				int len = dis.readShort();
 
-				byte command = this.dis.readByte();
+				byte command = dis.readByte();
 
 				if(Const.logging)
 				{
@@ -53,9 +53,9 @@ public class Network implements Runnable
 
 				switch(command)
 				{
-					case 11:
-						int width = this.dis.readShort();
-						int height = this.dis.readShort();
+					case NetworkStreamAdapter.StC_SYNC_FIELD:
+						int width = dis.readShort();
+						int height = dis.readShort();
 						len -= 4;
 
 						byte[][] newField = new byte[width][height];
@@ -63,60 +63,60 @@ public class Network implements Runnable
 						for(int i = 0; i < width; i++ )
 						{
 							len -= height;
-							this.dis.read(newField[i]);
+							dis.read(newField[i]);
 						}
-						this.guiInteractor.updateField(newField);
+						guiInteractor.updateField(newField);
 						break;
-					case 8:
+					case NetworkStreamAdapter.StC_PLAYER_JOIN:
 					{
-						int slot = this.dis.read();
+						int slot = dis.read();
 						len-- ;
 						byte[] buffer = new byte[len];
-						this.dis.read(buffer);
+						dis.read(buffer);
 						len -= buffer.length;
 						String name = new String(buffer, "UTF-8");
 
-						this.guiInteractor.playerJoined(slot, name);
+						guiInteractor.playerJoined(slot, name);
 					}
 					break;
-					case 12:
+					case NetworkStreamAdapter.StC_SYNC_PLAYER:
 					{
-						byte slot = this.dis.readByte();
-						byte state = this.dis.readByte();
-						float x = this.dis.readFloat();
-						float y = this.dis.readFloat();
-						float speed = this.dis.readFloat();
-						byte power = this.dis.readByte();
-						byte score = this.dis.readByte();
+						byte slot = dis.readByte();
+						byte state = dis.readByte();
+						float x = dis.readFloat();
+						float y = dis.readFloat();
+						float speed = dis.readFloat();
+						byte power = dis.readByte();
+						byte score = dis.readByte();
 						len -= 16;
-						this.guiInteractor.updatePlayer(slot, state, x, y, speed, power, score);
+						guiInteractor.updatePlayer(slot, state, x, y, speed, power, score);
 					}
 					break;
-					case 10:
+					case NetworkStreamAdapter.StC_SYNC_CELL:
 					{
-						byte x = this.dis.readByte();
-						byte y = this.dis.readByte();
-						byte cellType = this.dis.readByte();
+						byte x = dis.readByte();
+						byte y = dis.readByte();
+						byte cellType = dis.readByte();
 						len -= 3;
-						this.guiInteractor.updateCell(x, y, cellType);
+						guiInteractor.updateCell(x, y, cellType);
 					}
 					break;
-					case 9:
+					case NetworkStreamAdapter.StC_PLAYER_SCORED:
 					{
-						byte p1 = this.dis.readByte();
-						byte p2 = this.dis.readByte();
+						byte p1 = dis.readByte();
+						byte p2 = dis.readByte();
 						len -= 2;
-						this.guiInteractor.playerScored(p1, p2);
+						guiInteractor.playerScored(p1, p2);
 					}
 					break;
-					case 14:
-						this.guiInteractor.reDraw();
+					case NetworkStreamAdapter.StC_UPDATE_COMPLETE:
+						guiInteractor.reDraw();
 
 						break;
-					case 13:
-						byte slot = this.dis.readByte();
+					case NetworkStreamAdapter.StC_PLAYER_DROP:
+						byte slot = dis.readByte();
 						len-- ;
-						this.guiInteractor.playerDrop(slot);
+						guiInteractor.playerDrop(slot);
 
 						break;
 					default:
@@ -126,7 +126,7 @@ public class Network implements Runnable
 				if(len > 0)
 				{
 					byte[] buffer = new byte[len];
-					this.dis.read(buffer);
+					dis.read(buffer);
 					throw new Error(len + "unused byte " + Arrays.toString(buffer));
 				}
 
@@ -145,23 +145,23 @@ public class Network implements Runnable
 		}
 		catch(IOException e)
 		{
-			this.guiInteractor.disconnect();
+			guiInteractor.disconnect();
 		}
 	}
 
 	public void setPlayerState(byte state) throws IOException
 	{
-		if(state == this.lastStateKnownToServer)
+		if(state == lastStateKnownToServer)
 		{
 			return;
 		}
 
-		this.lastStateKnownToServer = state;
+		lastStateKnownToServer = state;
 
-		this.nsa.queue((byte) 2, new Object[] { Byte.valueOf(state) });
+		nsa.queue((byte) 2, new Object[] { Byte.valueOf(state) });
 
-		this.nsa.writeToStream(this.sock.getOutputStream());
+		nsa.writeToStream(sock.getOutputStream());
 
-		this.nsa.clear();
+		nsa.clear();
 	}
 }
