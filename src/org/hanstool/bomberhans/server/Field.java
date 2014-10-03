@@ -1,5 +1,7 @@
 package org.hanstool.bomberhans.server;
 
+import static org.hanstool.bomberhans.shared.Const.CellTypes.*;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -28,37 +30,33 @@ public class Field
 				byte b;
 				if(x == 0 || x == size - 1 || y == 0 || y == size - 1)
 				{
-					b = 2;
+					b = WALL;
 				}
 				else if((x == 1 || x == size - 2) && (y == 1 || y == size - 2))
 				{
-					b = 21;
+					b = START_POINT;
 				}
 				else if((x == 2 || x == size - 3) && (y == 1 || y == size - 2))
 				{
-					b = 1;
+					b = CLEAR;
 				}
 				else if((x == 1 || x == size - 2) && (y == 2 || y == size - 3))
 				{
-					b = 1;
+					b = CLEAR;
+				}
+				else if(x % 2 == 0 && y % 2 == 0)
+				{
+					b = WALL;
+				}
+				else if(Const.GameConsts.rand.nextInt(100) < 60)
+				{
+					b = WOOD;
 				}
 				else
 				{
-					if(x % 2 == 0 && y % 2 == 0)
-					{
-						b = 2;
-					}
-					else if(Const.GameConsts.rand.nextInt(100) < 60)
-					{
-						b = 3;
-					}
-					else
-					{
-						b = 1;
-					}
-					
+					b = CLEAR;
 				}
-				
+
 				bytes[x][y] = b;
 			}
 		}

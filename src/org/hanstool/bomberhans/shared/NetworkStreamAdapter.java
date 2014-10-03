@@ -50,17 +50,17 @@ public class NetworkStreamAdapter
 	
 	public void clear()
 	{
-		this.arrayOS = new ByteArrayOutputStream(1024);
-		this.dout = new DataOutputStream(this.arrayOS);
-		this.queueEmpty = true;
+		arrayOS = new ByteArrayOutputStream(1024);
+		dout = new DataOutputStream(arrayOS);
+		queueEmpty = true;
 	}
 	
 	public boolean isQueueEmpty()
 	{
-		return this.queueEmpty;
+		return queueEmpty;
 	}
 	
-	public void queue(byte networkCMD, Object[] params)
+	public void queue(byte networkCMD, Object... params)
 	{
 		ByteArrayOutputStream temp = new ByteArrayOutputStream(255);
 		
@@ -101,10 +101,10 @@ public class NetworkStreamAdapter
 			}
 			
 			byte[] buff = temp.toByteArray();
-			this.dout.writeShort(buff.length);
-			this.dout.write(buff);
+			dout.writeShort(buff.length);
+			dout.write(buff);
 			
-			this.queueEmpty = false;
+			queueEmpty = false;
 			
 			if(Const.logging)
 			{
@@ -144,7 +144,7 @@ public class NetworkStreamAdapter
 	
 	public void writeToStream(OutputStream os) throws IOException
 	{
-		byte[] updatePack = this.arrayOS.toByteArray();
+		byte[] updatePack = arrayOS.toByteArray();
 		
 		os.write(updatePack);
 		os.flush();

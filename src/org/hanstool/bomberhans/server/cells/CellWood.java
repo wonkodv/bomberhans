@@ -2,28 +2,30 @@ package org.hanstool.bomberhans.server.cells;
 
 import org.hanstool.bomberhans.server.SPlayer;
 import org.hanstool.bomberhans.server.UpdateListener;
-import org.hanstool.bomberhans.shared.Const;
+import org.hanstool.bomberhans.shared.Const.CellTypes;
+import org.hanstool.bomberhans.shared.Const.GameConsts;
+
 class CellWood extends Cell
 {
 	private int	timeToLive	= 1800;
-	
+
 	protected CellWood(byte x, byte y, byte cellType)
 	{
 		super(x, y, cellType);
 	}
-	
+
 	@Override
 	public boolean canWalkOn()
 	{
 		return false;
 	}
-	
+
 	@Override
 	public void handleWalkOn(SPlayer p, UpdateListener ful)
 	{
-		throw new Error("walking on Wood");
+		throw new Error("walking on Wood?");
 	}
-	
+
 	@Override
 	public boolean setOnFire(byte cellType, UpdateListener ful, SPlayer owner)
 	{
@@ -31,69 +33,55 @@ class CellWood extends Cell
 		ful.replaceCell(this);
 		return false;
 	}
-	
+
 	@Override
 	public void update(long timeElapsed, UpdateListener ful)
 	{
-		if(getCellType() == 4)
+		if(getCellType() == CellTypes.BURNING_WOOD)
 		{
-			this.timeToLive = (int) (this.timeToLive - timeElapsed);
-			if(this.timeToLive <= 0)
+			timeToLive -= timeElapsed;
+			if(timeToLive <= 0)
 			{
 				byte cellType;
-				if(Const.GameConsts.rand.nextInt(100) < ful.getWoodToSpecial())
+				if(GameConsts.rand.nextInt(100) < ful.getWoodToSpecial())
 				{
-					int i = Const.GameConsts.rand.nextInt(416);
+					int i = GameConsts.rand.nextInt(GameConsts.WTS_SCHINKEN);
 
-					if(i < 1)
+					if(i < GameConsts.WTS_WALL)
 					{
-						cellType = 2;
+						cellType = CellTypes.WALL;
+					}
+					else if(i < GameConsts.WTS_POWER)
+					{
+						cellType = CellTypes.PU_POWER;
+					}
+					else if(i < GameConsts.WTS_SPEED)
+					{
+						cellType = CellTypes.PU_SPEED;
+					}
+
+					else if(i < GameConsts.WTS_BOMBS)
+					{
+						cellType = CellTypes.PU_BOMB;
+					}
+					else if(i < GameConsts.WTS_PORT)
+					{
+						cellType = CellTypes.SP_PORT;
+					}
+					else if(i < GameConsts.WTS_SCHINKEN)
+					{
+						cellType = CellTypes.SP_SCHINKEN;
 					}
 					else
 					{
-						if(i < 101)
-						{
-							cellType = 17;
-						}
-						else
-						{
-							if(i < 201)
-							{
-								cellType = 18;
-							}
-							else
-							{
-								if(i < 301)
-								{
-									cellType = 16;
-								}
-								else
-								{
-									if(i < 401)
-									{
-										cellType = 19;
-									}
-									else
-									{
-										if(i < 416)
-										{
-											cellType = 20;
-										}
-										else
-										{
-											cellType = 1;
-										}
-									}
-								}
-							}
-						}
+						cellType = CellTypes.CLEAR;
 					}
+
 				}
 				else
 				{
-					cellType = 1;
+					cellType = CellTypes.CLEAR;
 				}
-				
 				ful.replaceCell(createCell(cellType, getX(), getY(), null, null));
 			}
 		}

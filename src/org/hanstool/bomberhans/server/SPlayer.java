@@ -5,6 +5,10 @@ import java.io.IOException;
 import java.net.Socket;
 
 import org.hanstool.bomberhans.server.cells.Cell;
+import org.hanstool.bomberhans.shared.Const;
+import org.hanstool.bomberhans.shared.Const.CellTypes;
+import org.hanstool.bomberhans.shared.Const.GameConsts;
+import org.hanstool.bomberhans.shared.Const.PlayerState;
 import org.hanstool.bomberhans.shared.Player;
 
 public class SPlayer extends Player
@@ -24,70 +28,70 @@ public class SPlayer extends Player
 		this.socket = socket;
 		try
 		{
-			this.dis = new DataInputStream(socket.getInputStream());
+			dis = new DataInputStream(socket.getInputStream());
 		}
 		catch(IOException e)
 		{
 			throw new Error(e);
 		}
-		this.isNew = true;
-		this.max_bombs = 1;
-		this.currentBombs = 0;
+		isNew = true;
+		max_bombs = GameConsts.PLAYER_BASE_BOMBS;
+		currentBombs = 0;
 	}
 	
 	public int getCurrentBombs()
 	{
-		return this.currentBombs;
+		return currentBombs;
 	}
 	
 	public boolean getDidChange()
 	{
-		return this.didChange;
+		return didChange;
 	}
 	
 	public DataInputStream getDis()
 	{
-		return this.dis;
+		return dis;
 	}
 	
 	public boolean getIsNew()
 	{
-		return this.isNew;
+		return isNew;
 	}
 	
 	public byte getMax_bombs()
 	{
-		return this.max_bombs;
+		return max_bombs;
 	}
 	
 	public Socket getSocket()
 	{
-		return this.socket;
+		return socket;
 	}
 	
 	public void incScore(UpdateListener ful)
 	{
 		setScore((byte) (getScore() + 1));
-		this.didChange = true;
+		didChange = true;
 	}
 	
 	public void powerUp(byte cellType)
 	{
 		switch(cellType)
 		{
-			case 17:
-				setPower((byte) (int) (getPower() + Math.ceil(0.5F / getPower())));
+			case CellTypes.PU_POWER:
+				setPower((byte) (getPower() + Math.ceil(Const.GameConsts.PU_GAIN / getPower())));
 			break;
-			case 18:
-				setSpeed(getSpeed() + 0.5F / getSpeed());
+			case CellTypes.PU_SPEED:
+				setSpeed(getSpeed() + Const.GameConsts.PU_GAIN / getSpeed());
 			break;
-			case 16:
-				this.max_bombs = (byte) (this.max_bombs + 1);
+			case CellTypes.PU_BOMB:
+				max_bombs = (byte) (max_bombs + 1);
 			break;
 			default:
 				return;
 		}
-		this.didChange = true;
+		didChange = true;
 	}
 	
 	public void respawn(UpdateListener ul)
@@ -95,13 +99,14 @@ public class SPlayer extends Player
 		Cell c = ul.getSlotCell(getSlot());
 		setX(c.getX() + 0.5F);
 		setY(c.getY() + 0.5F);
-		setState((byte) 1);
-		this.didChange = true;
-		
-		setPower((byte) (int) Math.max(2.0F, getPower() * 0.8F));
-		
-		setSpeed(Math.max(1.3F, getSpeed() * 0.8F));
-		setMax_bombs((byte) (int) Math.max(1.0F, getMax_bombs() * 0.8F));
+		setState(PlayerState.RESPAWNED);
+		didChange = true;
+
+		setPower((byte) Math.max(GameConsts.PLAYER_BASE_POWER, getPower() * GameConsts.PU_RDUCE));
+
+		setSpeed(Math.max(GameConsts.PLAYER_BASE_SPEED, getSpeed() * GameConsts.PU_RDUCE));
+		setMax_bombs((byte) Math.max(GameConsts.PLAYER_BASE_BOMBS, getMax_bombs() * GameConsts.PU_RDUCE));
+
 	}
 	
 	public void setCurrentBombs(int currentBombs)
@@ -126,6 +131,7 @@ public class SPlayer extends Player
 	
 	public void update(long timeElapsed, UpdateListener ful)
 	{
+		/* getX() points to the Center of Hans so floor works */
 		byte x = (byte) (int) Math.floor(getX());
 		byte y = (byte) (int) Math.floor(getY());
 		
@@ -136,42 +142,43 @@ public class SPlayer extends Player
 		
 		switch(getState())
 		{
-			case 2:
-			case 3:
+			case PlayerState.RUNNING_N:
+			case PlayerState.RUNNING_N2:
 				dY = -1;
 			break;
-			case 4:
-			case 5:
-				dX = 1;
+			case PlayerState.RUNNING_E:
+			case PlayerState.RUNNING_E2:
+				dX = +1;
 			break;
-			case 6:
-			case 7:
-				dY = 1;
+			case PlayerState.RUNNING_S:
+			case PlayerState.RUNNING_S2:
+				dY = +1;
 			break;
-			case 8:
-			case 9:
+			case PlayerState.RUNNING_W:
+			case PlayerState.RUNNING_W2:
 				dX = -1;
 			break;
-			case 10:
-			case 11:
-			break;
-			case 13:
+			case PlayerState.IDLE:
+			case PlayerState.IDLE2:
+
+				break;
+			case PlayerState.PLACING_BOMB:
+
 				currentlyOn.handleWalkOn(this, ful);
-				this.didChange = true;
+				didChange = true;
 				return;
-			case 12:
 			default:
 				return;
 		}
 		
 		if((getState() | 0x1) != 11)
 		{
-			float isle_width = 0.1F;
-			float proximity = 0.4F;
-			
-			Cell nextCellA = ful.getCell((byte) (int) Math.floor(getX() + dX * 0.4F + dY * 0.1F), (byte) (int) Math.floor(getY() + dY * 0.4F + dX * 0.1F));
-			Cell nextCellB = ful.getCell((byte) (int) Math.floor(getX() + dX * 0.4F - dY * 0.1F), (byte) (int) Math.floor(getY() + dY * 0.4F - dX * 0.1F));
-			
+			final float isle_width = 0.1f;
+			final float proximity = 0.5f - isle_width;
+
+			Cell nextCellA = ful.getCell((byte) Math.floor(getX() + dX * proximity + dY * isle_width), (byte) Math.floor(getY() + dY * proximity + dX * isle_width));
+			Cell nextCellB = ful.getCell((byte) Math.floor(getX() + dX * proximity - dY * isle_width), (byte) Math.floor(getY() + dY * proximity - dX * isle_width));
+
 			if(nextCellA.canWalkOn() && nextCellB.canWalkOn())
 			{
 				float movedist = getSpeed() * timeElapsed / 1000.0F;
@@ -184,25 +191,25 @@ public class SPlayer extends Player
 				{
 					setY(getY() + dY * movedist);
 					
-					this.didChange = true;
+					didChange = true;
 				}
 				else
 				{
 					setX(getX() + dX * movedist);
 					
-					this.didChange = true;
+					didChange = true;
 				}
 			}
 		}
-		
-		this.animationTimer = (int) (this.animationTimer + timeElapsed);
-		if(this.animationTimer > 200)
+
+		animationTimer += timeElapsed;
+		if(animationTimer > GameConsts.ANIMATION_TIME)
 		{
-			setState((byte) (getState() ^ 0x1));
-			this.animationTimer = 0;
-			this.didChange = true;
+			setState((byte) (getState() ^ 1)); // Hampeln
+			animationTimer = 0;
+			didChange = true;
 		}
 		
-		currentlyOn.handleWalkOn(this, ful);
+		currentlyOn.handleWalkOn(this, ful); // die in fire, pick up Specials
 	}
 }

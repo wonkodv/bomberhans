@@ -2,9 +2,11 @@ package org.hanstool.bomberhans.server;
 
 import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -13,6 +15,9 @@ import org.hanstool.bomberhans.mapeditor.MapLoader;
 import org.hanstool.bomberhans.server.cells.Cell;
 import org.hanstool.bomberhans.server.cells.CellStartSlot;
 import org.hanstool.bomberhans.shared.Const;
+import org.hanstool.bomberhans.shared.Const.CellTypes;
+import org.hanstool.bomberhans.shared.Const.NetworkConsts;
+import org.hanstool.bomberhans.shared.Const.PlayerState;
 import org.hanstool.bomberhans.shared.NetworkStreamAdapter;
 
 public class Server implements Runnable
@@ -20,23 +25,33 @@ public class Server implements Runnable
 	private LinkedList<SPlayer>		players;
 	private Field					field;
 	private NetworkStreamAdapter	nsa;
+	private Thread					serverThread;
+	private Thread					acceptClientsThread;
+	private boolean					started;
 
 	class ClientAccepter implements Runnable
 	{
 		@Override
 		public void run()
 		{
-			try (ServerSocket serverSocket = new ServerSocket(5636))
+			try (ServerSocket serverSocket = new ServerSocket(Const.NetworkConsts.SERVER_PORT))
 			{
-				while(true)
+				serverSocket.setSoTimeout(NetworkConsts.SERVER_ACCEPT_TIMEOUT);
+				while( !Thread.interrupted())
 				{
-					Socket s = serverSocket.accept();
-					AddPlayer(s);
+					try
+					{
+						Socket s = serverSocket.accept();
+						AddPlayer(s);
+					}
+					catch(SocketTimeoutException e)
+					{
+					}
 				}
 			}
 			catch(IOException e)
 			{
-				// TODO queue Sever Stop
+				e.printStackTrace();
 				System.exit(5);
 			}
 		}
@@ -44,40 +59,58 @@ public class Server implements Runnable
 	
 	public Server()
 	{
-		this(null);
-	}
-	
-	public Server(String mapFile)
-	{
 		nsa = new NetworkStreamAdapter();
 		players = new LinkedList<SPlayer>();
-
 		field = null;
-		if(mapFile != null)
+		acceptClientsThread = new Thread(new ClientAccepter(), "ClientAcceptThread");
+		acceptClientsThread.start();
+		started = false;
+	}
+
+	File	map;
+
+	public void setNextMap(File map) throws FileNotFoundException
+	{
+		if( !map.isFile())
+		{
+			throw new FileNotFoundException(map.toString());
+		}
+		this.map = map;
+	}
+
+	private void loadMap()
+	{
+		field = null;
+		if(map != null)
 		{
 			MapLoader ml;
 			try
 			{
-				ml = new MapLoader(new File(mapFile));
+				ml = new MapLoader(map);
 				field = new Field(this, ml);
 			}
 			catch(IOException e)
 			{
-				e.printStackTrace();
+				throw new Error(e);
 			}
-
 		}
 		if(field == null)
 		{
 			field = new Field(this, Field.generateNewField(), 70);
 		}
-		
-		Thread serverThread = new Thread(this, "Server Thread");
-		
-		Thread acceptClientsThread = new Thread(new ClientAccepter(), "ClientAcceptThread");
-		
+	}
+
+	public void start()
+	{
+		if(started)
+		{
+			throw new UnsupportedOperationException("not implemented");
+		}
+
+		loadMap();
+		serverThread = new Thread(this, "Server Thread");
 		serverThread.start();
-		acceptClientsThread.start();
+		
 	}
 
 	void AddPlayer(Socket socket)
@@ -156,9 +189,9 @@ public class Server implements Runnable
 
 			switch(command)
 			{
-				case 0:
+				case NetworkStreamAdapter.INVALID:
 					throw new Error("What the fuck? Network Command Invalid O_O");
-				case 1:
+				case NetworkStreamAdapter.CtS_PLAYER_HELO:
 					byte[] buffer = new byte[len];
 					dis.read(buffer, 0, len);
 					len -= buffer.length;
@@ -170,11 +203,11 @@ public class Server implements Runnable
 					}
 				
 				break;
-				case 2:
+				case NetworkStreamAdapter.CtS_PLAYER_SEND_STATE:
 					byte state = dis.readByte();
 					len-- ;
 
-					if(state == 13)
+					if(state == PlayerState.PLACING_BOMB)
 					{
 						if(p.getCurrentBombs() < p.getMax_bombs())
 						{
@@ -184,24 +217,22 @@ public class Server implements Runnable
 								float dY = 0.0F;
 								switch(p.getState() | 0x1)
 								{
-									case 3:
+									case PlayerState.RUNNING_N2:
 										dY = 0.4F;
 									break;
-									case 9:
+									case PlayerState.RUNNING_W2:
 										dX = 0.4F;
 									break;
-									case 5:
+									case PlayerState.RUNNING_E2:
 										dX = -0.4F;
 									break;
-									case 7:
+									case PlayerState.RUNNING_S2:
 										dY = -0.4F;
-									case 4:
-									case 6:
-									case 8:
+									break;
 								}
 								byte x = (byte) (int) Math.floor(p.getX() + dX);
 								byte y = (byte) (int) Math.floor(p.getY() + dY);
-								if(ful.getCell(x, y).getCellType() == 1 || ful.getCell(x, y).getCellType() == 15)
+								if(ful.getCell(x, y).getCellType() == CellTypes.CLEAR || ful.getCell(x, y).getCellType() == CellTypes.HANS_GORE)
 								{
 									ful.replaceCell(Cell.createCell((byte) 5, x, y, p, null));
 									p.setCurrentBombs(p.getCurrentBombs() + 1);
@@ -212,9 +243,10 @@ public class Server implements Runnable
 					p.setState(state);
 				
 				break;
-				case 4:
+				case NetworkStreamAdapter.CtS_PLAYER_PLACE_BOMB:
+					// TODO if not StartSlot
 					throw new UnsupportedOperationException("NetworkCommand not implemented");
-				case 3:
+				case NetworkStreamAdapter.CtS_PLAYER_NEWGAME:
 					throw new UnsupportedOperationException("NetworkCommand not implemented");
 			}
 
@@ -239,12 +271,16 @@ public class Server implements Runnable
 
 	private void netHandlePlayerDrop(SPlayer p)
 	{
-		nsa.queue((byte) 13, new Object[] { Byte.valueOf(p.getSlot()) });
+		nsa.queue(NetworkStreamAdapter.StC_PLAYER_DROP, Byte.valueOf(p.getSlot()));
 	}
 
 	private void netSendPlayerToClient(SPlayer p)
 	{
-		sendToClient((byte) 12, new Object[] { Byte.valueOf(p.getSlot()), Byte.valueOf(p.getState()), Float.valueOf(p.getX()), Float.valueOf(p.getY()), Float.valueOf(p.getSpeed()), Byte.valueOf(p.getPower()), Byte.valueOf(p.getScore()) });
+		/*
+		 * Parameters: byte slot, byte state, float x, float y, byte speed, byte
+		 * power, byte score
+		 */
+		sendToClient(NetworkStreamAdapter.StC_SYNC_PLAYER, p.getSlot(), p.getState(), p.getX(), p.getY(), p.getSpeed(), p.getPower(), p.getScore());
 	}
 
 	private void netSendWholeFieldToClient()
@@ -260,92 +296,102 @@ public class Server implements Runnable
 				buff[x * h + y] = field.getCellType(x, y);
 			}
 		}
-		nsa.queue((byte) 11, new Object[] { Short.valueOf(w), Short.valueOf(h), buff });
+		nsa.queue(NetworkStreamAdapter.StC_SYNC_FIELD, w, h, buff);
 	}
 
 	@Override
 	public void run()
 	{
-		Thread.currentThread().setPriority(7);
-		long lastTime = System.currentTimeMillis();
-		while(true)
+		started = true;
+
+		try
 		{
-			long timePassed = System.currentTimeMillis() - lastTime;
-			lastTime = System.currentTimeMillis();
-
-			synchronized(players)
+			
+			Thread.currentThread().setPriority(Thread.NORM_PRIORITY + 2);
+			long lastTime = System.currentTimeMillis();
+			while(true)
 			{
-				for(Iterator<SPlayer> it = players.iterator(); it.hasNext();)
+				long timePassed = System.currentTimeMillis() - lastTime;
+				lastTime = System.currentTimeMillis();
+				
+				synchronized(players)
 				{
-					SPlayer p = it.next();
-					try
-					{
-						netHandleInput(p, field.ful);
-						if(p.getIsNew())
-						{
-							netSendWholeFieldToClient();
-							p.setIsNew(false);
-						}
-					}
-					catch(IOException e)
-					{
-						field.ful.getSlotCell(p.getSlot()).setOwner(null);
-
-						it.remove();
-						netHandlePlayerDrop(p);
-					}
-				}
-
-				for(SPlayer p : players)
-				{
-					p.update(timePassed, field.ful);
-				}
-
-				for(SPlayer p : players)
-				{
-					if(p.getDidChange())
-					{
-						netSendPlayerToClient(p);
-						p.setDidChange(false);
-					}
-
-				}
-
-				field.update(timePassed);
-
-				if( !nsa.isQueueEmpty())
-				{
-					nsa.queue((byte) 14, new Object[0]);
-
 					for(Iterator<SPlayer> it = players.iterator(); it.hasNext();)
 					{
 						SPlayer p = it.next();
 						try
 						{
-							nsa.writeToStream(p.getSocket().getOutputStream());
+							netHandleInput(p, field.ful);
+							if(p.getIsNew())
+							{
+								netSendWholeFieldToClient();
+								p.setIsNew(false);
+							}
 						}
 						catch(IOException e)
 						{
+							field.ful.getSlotCell(p.getSlot()).setOwner(null);
+							
 							it.remove();
 							netHandlePlayerDrop(p);
 						}
 					}
+					
+					for(SPlayer p : players)
+					{
+						p.update(timePassed, field.ful);
+					}
+					
+					for(SPlayer p : players)
+					{
+						if(p.getDidChange())
+						{
+							netSendPlayerToClient(p);
+							p.setDidChange(false);
+						}
+						
+					}
+					
+					field.update(timePassed);
+					
+					if( !nsa.isQueueEmpty())
+					{
+						nsa.queue((byte) 14, new Object[0]);
+						
+						for(Iterator<SPlayer> it = players.iterator(); it.hasNext();)
+						{
+							SPlayer p = it.next();
+							try
+							{
+								nsa.writeToStream(p.getSocket().getOutputStream());
+							}
+							catch(IOException e)
+							{
+								it.remove();
+								netHandlePlayerDrop(p);
+							}
+						}
+					}
+					
 				}
-
+				
+				nsa.clear();
+				try
+				{
+					Thread.sleep(Const.NetworkConsts.UPDATE_INTERVAL);
+				}
+				catch(InterruptedException localInterruptedException)
+				{
+				}
 			}
-
-			nsa.clear();
-			try
-			{
-				Thread.sleep(50L);
-			}
-			catch(InterruptedException localInterruptedException)
-			{
-			}
+		}
+		finally
+		{
+			started = false;
 		}
 	}
 
-	void sendToClient(byte networkCMD, Object[] params)
+	void sendToClient(byte networkCMD, Object... params)
 	{
 		nsa.queue(networkCMD, params);
 	}

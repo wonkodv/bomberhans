@@ -1,5 +1,7 @@
 package org.hanstool.bomberhans.server.cells;
 
+import static org.hanstool.bomberhans.shared.Const.CellTypes.*;
+
 import java.util.Random;
 
 import org.hanstool.bomberhans.server.SPlayer;
@@ -15,15 +17,15 @@ class CellBomb extends Cell
 
 	public CellBomb(byte x, byte y, SPlayer owner)
 	{
-		super(x, y, (byte) 5);
+		super(x, y, BOMB);
 		this.owner = owner;
-		this.power = owner.getPower();
+		power = owner.getPower();
 	}
 
 	@Override
 	public boolean canWalkOn()
 	{
-		return rand.nextInt(100) < 60;
+		return rand.nextInt(100) < Const.GameConsts.BOMB_WALKOVER;
 	}
 
 	@Override
@@ -34,9 +36,10 @@ class CellBomb extends Cell
 	@Override
 	public boolean setOnFire(byte cellType, UpdateListener ful, SPlayer owner)
 	{
-		if(this.timeToLive > 400)
+		// TODO: Change Owner?
+		if(timeToLive > Const.GameConsts.BOMB_TTL_AFTER_BURNING)
 		{
-			this.timeToLive = 400;
+			timeToLive = Const.GameConsts.BOMB_TTL_AFTER_BURNING;
 		}
 
 		return true;
@@ -45,11 +48,11 @@ class CellBomb extends Cell
 	@Override
 	public void update(long timeElapsed, UpdateListener ful)
 	{
-		this.timeToLive = (int) (this.timeToLive - timeElapsed);
-		if(this.timeToLive < 0)
+		timeToLive -= timeElapsed;
+		if(timeToLive <= 0)
 		{
-			explode(ful, this.power, this.owner);
-			this.owner.setCurrentBombs(this.owner.getCurrentBombs() - 1);
+			explode(ful, power, owner);
+			owner.setCurrentBombs(owner.getCurrentBombs() - 1);
 		}
 	}
 }

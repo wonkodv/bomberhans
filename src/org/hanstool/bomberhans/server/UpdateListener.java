@@ -7,46 +7,46 @@ public class UpdateListener
 {
 	private final Field		field;
 	private final Server	server;
-	
+
 	UpdateListener(Server server, Field field)
 	{
 		this.field = field;
 		this.server = server;
 	}
-	
+
 	public Cell getCell(byte x, byte y)
 	{
-		return this.field.cells[x][y];
+		return field.cells[x][y];
 	}
-	
+
 	public int getHeight()
 	{
-		return this.field.getHeight();
+		return field.getHeight();
 	}
-	
+
 	public CellStartSlot getSlotCell(byte slot)
 	{
-		return this.field.getSlotCell(slot);
+		return field.getSlotCell(slot);
 	}
-	
+
 	public int getWidth()
 	{
-		return this.field.getWidth();
+		return field.getWidth();
 	}
-	
+
 	public int getWoodToSpecial()
 	{
-		return this.field.getWoodToSpecial();
+		return field.getWoodToSpecial();
 	}
-	
+
 	public void replaceCell(Cell cell)
 	{
-		this.field.cells[cell.getX()][cell.getY()] = cell;
-		sendToClient((byte) 10, new Object[] { Byte.valueOf(cell.getX()), Byte.valueOf(cell.getY()), Byte.valueOf(cell.getCellType()) });
+		field.cells[cell.getX()][cell.getY()] = cell;
+		sendToClient((byte) 10, Byte.valueOf(cell.getX()), Byte.valueOf(cell.getY()), Byte.valueOf(cell.getCellType()));
 	}
-	
-	public void sendToClient(byte networkCMD, Object[] params)
+
+	public void sendToClient(byte networkCMD, Object... params)
 	{
-		this.server.sendToClient(networkCMD, params);
+		server.sendToClient(networkCMD, params);
 	}
 }

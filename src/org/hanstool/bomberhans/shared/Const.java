@@ -60,11 +60,14 @@ public class Const
 		public static final int		MAX_PLAYERS				= 8;
 		public static final int		FIRE_TTL				= 1250;
 		public static final int		BOMB_WALKOVER			= 60;
+		public static final int		DEAD_GUY_WALKOVER		= 80;
+		
 		public static final int		BURNING_WOOD_TTL		= 1800;
 		public static final int		BOMB_TTL_AFTER_BURNING	= 400;
 		public static final int		BURNING_HANS_TTL		= 4250;
 		public static final int		PLAYER_BASE_POWER		= 2;
 		public static final float	PLAYER_BASE_SPEED		= 1.3F;
+		public static final byte	PLAYER_BASE_BOMBS		= 1;
 		public static final float	PU_GAIN					= 0.5F;
 		public static final float	PU_RDUCE				= 0.8F;
 		public static final int		WTS_WALL				= 1;
@@ -75,7 +78,6 @@ public class Const
 		public static final int		WTS_SCHINKEN			= 416;
 		public static final int		ANIMATION_TIME			= 200;
 		public static final int		SPECIAL_EXPLODE_POWER	= 1;
-		public static final byte	PLAYER_BASE_BOMBS		= 1;
 		public static Random		rand					= new Random();
 		
 		public static int BOMB_TTL()
@@ -93,8 +95,9 @@ public class Const
 	
 	public static class NetworkConsts
 	{
-		public static final long	UPDATE_INTERVAL	= 50L;
-		public static final int		SERVER_PORT		= 5636;
+		public static final long	UPDATE_INTERVAL			= 50L;
+		public static final int		SERVER_PORT				= 5636;
+		public static final int		SERVER_ACCEPT_TIMEOUT	= 1000;
 	}
 	
 	public static class PlayerState

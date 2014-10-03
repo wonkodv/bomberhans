@@ -1,7 +1,10 @@
 package org.hanstool.bomberhans.server.cells;
 
+import static org.hanstool.bomberhans.shared.Const.CellTypes.*;
+
 import org.hanstool.bomberhans.server.SPlayer;
 import org.hanstool.bomberhans.server.UpdateListener;
+import org.hanstool.bomberhans.shared.Const;
 
 public class CellSpecial extends Cell
 {
@@ -20,13 +23,13 @@ public class CellSpecial extends Cell
 	public void handleWalkOn(SPlayer p, UpdateListener ful)
 	{
 		p.powerUp(getCellType());
-		ful.replaceCell(createCell((byte) 1, getX(), getY(), null, null));
+		ful.replaceCell(createCell(CLEAR, getX(), getY(), null, null));
 	}
 	
 	@Override
 	public boolean setOnFire(byte cellType, UpdateListener ful, SPlayer owner)
 	{
-		explode(ful, 1, owner);
+		explode(ful, Const.GameConsts.SPECIAL_EXPLODE_POWER, owner);
 		return true;
 	}
 	
